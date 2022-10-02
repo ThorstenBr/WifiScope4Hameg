@@ -26,6 +26,7 @@ var BlockGuiCallbacks = false;
 var XResolutionPerDiv = 200;
 var YResolutionPerDiv = 25;
 
+var ConnectionError = false;
 var HamegSetting = {};
 
 function timeNow()
@@ -176,6 +177,15 @@ function getTriggerCouplingSelector()
 		"</select>");
 }
 
+function getReferenceSelector()
+{
+	return ("<select id=\"ref\" title=\"Select reference to display\" onchange=\"guiCallback(this)\">"+
+		"<option value=\"NO REF\">NO REF</option>"+
+		"<option value=\"REF1\">REF1</option>"+
+		"<option value=\"REF2\">REF2</option>"+
+		"</select>");
+}
+
 function addGuiElements(ScopeTable)
 {
 	var TopRow    = ScopeTable.rows[0];
@@ -189,6 +199,8 @@ function addGuiElements(ScopeTable)
 	GuiCells.Note.colSpan = 2
 
 	GuiCells.Hold = TopRow.insertCell(3);
+	GuiCells.Hold.style.fontWeight = "bold";
+	GuiCells.Hold.style.fontSize = "24px";
 
 	GuiCells.ButtonsLeft = MiddleRow.cells[0];
 	GuiCells.ButtonsRight = MiddleRow.cells[2];
@@ -200,7 +212,7 @@ function addGuiElements(ScopeTable)
 	var trigger_edge = '<button type="button" id="trigger_edge" onclick="guiCallback(this);" title="Trigger on rising or falling edge">TRIG &uarr;</button>'; 
 	
 	var update = '<button type="button" id="update" onclick="updateData();" title=\"Refresh display\">UPDATE</button>';
-	var ref = '<button type="button" id="ref" onclick="guiCallback({\'id\':\'store_mode\', \'value\':\'REF\'});" title=\"Toggle display of reference signals\">REF</button>';
+	var ref = getReferenceSelector();
 	var hold = '<button type="button" id="hold" onclick="guiCallback({\'id\':\'hold\', \'value\':\'0\'});" title=\"Hold current scope measurement data\">HOLD</button>';
 	
 	GuiCells.ButtonsRight.innerHTML = autoset+"<br>"+trigger_edge+"<br>"+getPreTriggerSelector()+"<br>"+getTriggerCouplingSelector()+"<br>"+getTriggerSourceSelector()+"<br>"+reset_single;
@@ -295,8 +307,12 @@ DynamicLoader.prototype.callback = function()
 	{
 		var TextData = this.Client.responseText;
 		this.Active = 0;
-		if (this.Client.status == 200)
-			processData(Charts[0], TextData);
+		ConnectionError = (this.Client.status != 200);
+		if (ConnectionError)
+		{
+			TextData = null;
+		}
+		processData(Charts[0], TextData);
 	}
 }
 
@@ -306,6 +322,7 @@ DynamicLoader.prototype.load = function(cb)
 		return 0;
 	this.Active = 1;
 	this.Client.open("GET", this.Url+"/data?nocache="+timeNow());
+	this.Client.timeout = 4000;
 	this.Client.onreadystatechange = function() {this.dynLoader.callback();};
 	this.Client.send(null);
 };
@@ -359,6 +376,7 @@ function doRequest(ArgumentList)
 		Url += "="+ArgumentList[2*i+1];
 	}
 	Client.open("POST", Url);
+	Client.timeout = 4000;
 	Client.onreadystatechange = function() {updateData();};
 	Client.send(null);
 }
@@ -438,17 +456,17 @@ function guiCallback(element)
 		   Mode = Value;
 		   doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", Ref1, "ref2", Ref2]);
 		}
-		else   
-		if (Value == "REF")
-		{
-			if ((HamegSetting.data.reference1===undefined)&&(HamegSetting.data.reference2===undefined))
-				doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", 1, "ref2", 0]);
-			else
-			if (HamegSetting.data.reference2===undefined)
-				doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", 0, "ref2", 1]);
-			else
-				doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", 0, "ref2", 0]);
-		}
+	}
+	else
+	if (element.id == "ref")
+	{
+		if (element.value == "REF1")
+			doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", 1, "ref2", 0]);
+		else
+		if (element.value == "REF2")
+			doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", 0, "ref2", 1]);
+		else
+			doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", 0, "ref2", 0]);
 	}
 	else
 	if ((element.id == "trigger_edge")||
@@ -515,11 +533,22 @@ function updateChInfo(ChannelId, chObj)
 function updateGuiElements()
 {
 	BlockGuiCallbacks = true;
-	
+
 	document.getElementById("trigger_edge").innerHTML = (HamegSetting.trigger.negative) ? "TRIG &darr;" : "TRIG &uarr;";
+
 	document.getElementById("hold").style.background = (HamegSetting.hold) ? "red" : "";
-	GuiCells.Hold.innerHTML = (HamegSetting.hold) ? "<b><font color='#ff00ff' size=+2>HOLD</font></b>" : "<b><font color='#000' size=+2>HOLD</font></b>";
-	
+
+	if (ConnectionError)
+	{
+		GuiCells.Hold.style.color = "red";
+		GuiCells.Hold.innerHTML = "NO CONNECTION";
+	}
+	else
+	{
+		GuiCells.Hold.style.color = "magenta";
+		GuiCells.Hold.innerHTML = (HamegSetting.hold) ? "HOLD" : "";
+	}
+
 	var Title = HamegSetting.deviceId.split(" ")[0];
 	document.title = Title;
 	GuiCells.DeviceID.innerHTML = "<center><font color=#88f><b>"+Title+"</b></font></center>";
@@ -536,6 +565,16 @@ function updateGuiElements()
 	updateChInfo(1, HamegSetting.ch1);
 	updateChInfo(2, HamegSetting.ch2);
 	
+	var ref = document.getElementById("ref");
+	if ((HamegSetting.data.reference1 === undefined)&&(HamegSetting.data.reference2 === undefined))
+	{
+		ref.value = "NO REF";
+	}
+	else
+	{
+		ref.value = (HamegSetting.data.reference2 === undefined) ? "REF1" : "REF2";
+	}
+
 	BlockGuiCallbacks = false;
 }
 
@@ -544,16 +583,20 @@ function processData(ChartObj, Json)
 	ChartConfig = ChartObj.ChartConfig;
 	ChartConfig.data.datasets = [];
 
-	var obj = JSON.parse(Json);
-
-	HamegSetting = obj;
+	if (Json != null)
+	{
+		HamegSetting = JSON.parse(Json);
+	}
 	updateGuiElements();
+
+	if (Json == null)
+		return;
 
 	Y1Position = HamegSetting.ch1.yPosition/1000.0;
 	Y2Position = HamegSetting.ch2.yPosition/1000.0;
 
 	var TriggerInfo = "";
-	if (obj.trigger.norm)
+	if (HamegSetting.trigger.norm)
 		TriggerInfo += "NORM";
 	GuiCells.Trigger.innerHTML = TriggerInfo;
 
@@ -615,25 +658,25 @@ function processData(ChartObj, Json)
 			};
 
 	// scope data for channel 1
-	if (obj.ch1.enabled)
+	if (HamegSetting.ch1.enabled)
 	{
-		var ch1  = convertWaveform(obj.data.channel1);
+		var ch1  = convertWaveform(HamegSetting.data.channel1);
 		pushDataSet(ChartConfig, ch1, datasetChannel1);
 	}
 
 	// scope data for channel 2
-	if (obj.ch2.enabled)
+	if (HamegSetting.ch2.enabled)
 	{
-		var ch2  = convertWaveform(obj.data.channel2);
+		var ch2  = convertWaveform(HamegSetting.data.channel2);
 		pushDataSet(ChartConfig, ch2, datasetChannel2);
 	}
 
 	// reference1 signal
-	var ref1 = convertWaveform(obj.data.reference1);
+	var ref1 = convertWaveform(HamegSetting.data.reference1);
 	pushDataSet(ChartConfig, ref1, datasetRef1);
 
 	// reference2 signal
-	var ref2 = convertWaveform(obj.data.reference2);
+	var ref2 = convertWaveform(HamegSetting.data.reference2);
 	pushDataSet(ChartConfig, ref2, datasetRef2);
 
 	ChartObj.update();

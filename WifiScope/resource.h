@@ -225,6 +225,7 @@
     "var BlockGuiCallbacks = false;\n" \
     "var XResolutionPerDiv = 200;\n" \
     "var YResolutionPerDiv = 25;\n" \
+    "var ConnectionError = false;\n" \
     "var HamegSetting = {};\n" \
     "function timeNow()\n" \
     "{\n" \
@@ -354,6 +355,14 @@
     "\"<option value=\\\"LINE\\\">LINE</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
+    "function getReferenceSelector()\n" \
+    "{\n" \
+    "return (\"<select id=\\\"ref\\\" title=\\\"Select reference to display\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
+    "\"<option value=\\\"NO REF\\\">NO REF</option>\"+\n" \
+    "\"<option value=\\\"REF1\\\">REF1</option>\"+\n" \
+    "\"<option value=\\\"REF2\\\">REF2</option>\"+\n" \
+    "\"</select>\");\n" \
+    "}\n" \
     "function addGuiElements(ScopeTable)\n" \
     "{\n" \
     "var TopRow    = ScopeTable.rows[0];\n" \
@@ -365,6 +374,8 @@
     "GuiCells.Note.innerHTML = \"<textarea rows='2' cols='60' spellcheck='false' title='comments, notes, free text area...'></textarea>\";\n" \
     "GuiCells.Note.colSpan = 2\n" \
     "GuiCells.Hold = TopRow.insertCell(3);\n" \
+    "GuiCells.Hold.style.fontWeight = \"bold\";\n" \
+    "GuiCells.Hold.style.fontSize = \"24px\";\n" \
     "GuiCells.ButtonsLeft = MiddleRow.cells[0];\n" \
     "GuiCells.ButtonsRight = MiddleRow.cells[2];\n" \
     "var wide = \"<button id=\\\"wide\\\" onclick=\\\"toggleWideView();\\\" title=\\\"Toggle wide display\\\">&#10231;</button>\";\n" \
@@ -372,7 +383,7 @@
     "var reset_single = '<button type=\"button\" id=\"reset_single\" onclick=\"guiCallback(this);\" title=\"Reset single trigger\">RES</button>';\n" \
     "var trigger_edge = '<button type=\"button\" id=\"trigger_edge\" onclick=\"guiCallback(this);\" title=\"Trigger on rising or falling edge\">TRIG &uarr;</button>';\n" \
     "var update = '<button type=\"button\" id=\"update\" onclick=\"updateData();\" title=\\\"Refresh display\\\">UPDATE</button>';\n" \
-    "var ref = '<button type=\"button\" id=\"ref\" onclick=\"guiCallback({\\'id\\':\\'store_mode\\', \\'value\\':\\'REF\\'});\" title=\\\"Toggle display of reference signals\\\">REF</button>';\n" \
+    "var ref = getReferenceSelector();\n" \
     "var hold = '<button type=\"button\" id=\"hold\" onclick=\"guiCallback({\\'id\\':\\'hold\\', \\'value\\':\\'0\\'});\" title=\\\"Hold current scope measurement data\\\">HOLD</button>';\n" \
     "GuiCells.ButtonsRight.innerHTML = autoset+\"<br>\"+trigger_edge+\"<br>\"+getPreTriggerSelector()+\"<br>\"+getTriggerCouplingSelector()+\"<br>\"+getTriggerSourceSelector()+\"<br>\"+reset_single;\n" \
     "GuiCells.ButtonsLeft.innerHTML  = wide+\"<br>\"+hold+\"<br>\"+update+\"<br>\"+ref;\n" \
@@ -451,7 +462,11 @@
     "{\n" \
     "var TextData = this.Client.responseText;\n" \
     "this.Active = 0;\n" \
-    "if (this.Client.status == 200)\n" \
+    "ConnectionError = (this.Client.status != 200);\n" \
+    "if (ConnectionError)\n" \
+    "{\n" \
+    "TextData = null;\n" \
+    "}\n" \
     "processData(Charts[0], TextData);\n" \
     "}\n" \
     "}\n" \
@@ -461,6 +476,7 @@
     "return 0;\n" \
     "this.Active = 1;\n" \
     "this.Client.open(\"GET\", this.Url+\"/data?nocache=\"+timeNow());\n" \
+    "this.Client.timeout = 4000;\n" \
     "this.Client.onreadystatechange = function() {this.dynLoader.callback();};\n" \
     "this.Client.send(null);\n" \
     "};\n" \
@@ -508,6 +524,7 @@
     "Url += \"=\"+ArgumentList[2*i+1];\n" \
     "}\n" \
     "Client.open(\"POST\", Url);\n" \
+    "Client.timeout = 4000;\n" \
     "Client.onreadystatechange = function() {updateData();};\n" \
     "Client.send(null);\n" \
     "}\n" \
@@ -584,17 +601,17 @@
     "Mode = Value;\n" \
     "doRequest([\"STORE_MODE\", 0, \"mode\", Mode, \"preTrigger\", HamegSetting.trigger.preTrigger, \"ref1\", Ref1, \"ref2\", Ref2]);\n" \
     "}\n" \
+    "}\n" \
     "else\n" \
-    "if (Value == \"REF\")\n" \
+    "if (element.id == \"ref\")\n" \
     "{\n" \
-    "if ((HamegSetting.data.reference1===undefined)&&(HamegSetting.data.reference2===undefined))\n" \
+    "if (element.value == \"REF1\")\n" \
     "doRequest([\"STORE_MODE\", 0, \"mode\", Mode, \"preTrigger\", HamegSetting.trigger.preTrigger, \"ref1\", 1, \"ref2\", 0]);\n" \
     "else\n" \
-    "if (HamegSetting.data.reference2===undefined)\n" \
+    "if (element.value == \"REF2\")\n" \
     "doRequest([\"STORE_MODE\", 0, \"mode\", Mode, \"preTrigger\", HamegSetting.trigger.preTrigger, \"ref1\", 0, \"ref2\", 1]);\n" \
     "else\n" \
     "doRequest([\"STORE_MODE\", 0, \"mode\", Mode, \"preTrigger\", HamegSetting.trigger.preTrigger, \"ref1\", 0, \"ref2\", 0]);\n" \
-    "}\n" \
     "}\n" \
     "else\n" \
     "if ((element.id == \"trigger_edge\")||\n" \
@@ -654,7 +671,16 @@
     "BlockGuiCallbacks = true;\n" \
     "document.getElementById(\"trigger_edge\").innerHTML = (HamegSetting.trigger.negative) ? \"TRIG &darr;\" : \"TRIG &uarr;\";\n" \
     "document.getElementById(\"hold\").style.background = (HamegSetting.hold) ? \"red\" : \"\";\n" \
-    "GuiCells.Hold.innerHTML = (HamegSetting.hold) ? \"<b><font color='#ff00ff' size=+2>HOLD</font></b>\" : \"<b><font color='#000' size=+2>HOLD</font></b>\";\n" \
+    "if (ConnectionError)\n" \
+    "{\n" \
+    "GuiCells.Hold.style.color = \"red\";\n" \
+    "GuiCells.Hold.innerHTML = \"NO CONNECTION\";\n" \
+    "}\n" \
+    "else\n" \
+    "{\n" \
+    "GuiCells.Hold.style.color = \"magenta\";\n" \
+    "GuiCells.Hold.innerHTML = (HamegSetting.hold) ? \"HOLD\" : \"\";\n" \
+    "}\n" \
     "var Title = HamegSetting.deviceId.split(\" \")[0];\n" \
     "document.title = Title;\n" \
     "GuiCells.DeviceID.innerHTML = \"<center><font color=#88f><b>\"+Title+\"</b></font></center>\";\n" \
@@ -665,19 +691,32 @@
     "document.getElementById(\"time_div\").value = HamegSetting.tba;\n" \
     "updateChInfo(1, HamegSetting.ch1);\n" \
     "updateChInfo(2, HamegSetting.ch2);\n" \
+    "var ref = document.getElementById(\"ref\");\n" \
+    "if ((HamegSetting.data.reference1 === undefined)&&(HamegSetting.data.reference2 === undefined))\n" \
+    "{\n" \
+    "ref.value = \"NO REF\";\n" \
+    "}\n" \
+    "else\n" \
+    "{\n" \
+    "ref.value = (HamegSetting.data.reference2 === undefined) ? \"REF1\" : \"REF2\";\n" \
+    "}\n" \
     "BlockGuiCallbacks = false;\n" \
     "}\n" \
     "function processData(ChartObj, Json)\n" \
     "{\n" \
     "ChartConfig = ChartObj.ChartConfig;\n" \
     "ChartConfig.data.datasets = [];\n" \
-    "var obj = JSON.parse(Json);\n" \
-    "HamegSetting = obj;\n" \
+    "if (Json != null)\n" \
+    "{\n" \
+    "HamegSetting = JSON.parse(Json);\n" \
+    "}\n" \
     "updateGuiElements();\n" \
+    "if (Json == null)\n" \
+    "return;\n" \
     "Y1Position = HamegSetting.ch1.yPosition/1000.0;\n" \
     "Y2Position = HamegSetting.ch2.yPosition/1000.0;\n" \
     "var TriggerInfo = \"\";\n" \
-    "if (obj.trigger.norm)\n" \
+    "if (HamegSetting.trigger.norm)\n" \
     "TriggerInfo += \"NORM\";\n" \
     "GuiCells.Trigger.innerHTML = TriggerInfo;\n" \
     "var datasetChannel1 = {\n" \
@@ -733,19 +772,19 @@
     "yAxisID: 'y-axis',\n" \
     "data: []\n" \
     "};\n" \
-    "if (obj.ch1.enabled)\n" \
+    "if (HamegSetting.ch1.enabled)\n" \
     "{\n" \
-    "var ch1  = convertWaveform(obj.data.channel1);\n" \
+    "var ch1  = convertWaveform(HamegSetting.data.channel1);\n" \
     "pushDataSet(ChartConfig, ch1, datasetChannel1);\n" \
     "}\n" \
-    "if (obj.ch2.enabled)\n" \
+    "if (HamegSetting.ch2.enabled)\n" \
     "{\n" \
-    "var ch2  = convertWaveform(obj.data.channel2);\n" \
+    "var ch2  = convertWaveform(HamegSetting.data.channel2);\n" \
     "pushDataSet(ChartConfig, ch2, datasetChannel2);\n" \
     "}\n" \
-    "var ref1 = convertWaveform(obj.data.reference1);\n" \
+    "var ref1 = convertWaveform(HamegSetting.data.reference1);\n" \
     "pushDataSet(ChartConfig, ref1, datasetRef1);\n" \
-    "var ref2 = convertWaveform(obj.data.reference2);\n" \
+    "var ref2 = convertWaveform(HamegSetting.data.reference2);\n" \
     "pushDataSet(ChartConfig, ref2, datasetRef2);\n" \
     "ChartObj.update();\n" \
     "}\n" \
