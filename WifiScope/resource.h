@@ -286,6 +286,7 @@
     "\"<option value=\\\"DC\\\">DC</option>\"+\n" \
     "\"<option value=\\\"AC\\\">AC</option>\"+\n" \
     "\"<option value=\\\"GND\\\">GND</option>\"+\n" \
+    "((ChannelId==1) ? \"\" : \"<option value=\\\"INVERT\\\">INVERT</option>\")+\n" \
     "\"<option value=\\\"OFF\\\">OFF</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
@@ -542,23 +543,45 @@
     "chobj = HamegSetting.ch2;\n" \
     "}\n" \
     "var Value = element.value;\n" \
-    "var ac = chobj.ac;\n" \
+    "var chEnabled = 1;\n" \
     "if ([\"10mV\", \"20mV\", \"50mV\", \"100mV\", \"200mV\", \"500mV\", \"1V\", \"2V\", \"5V\", \"10V\", \"20V\", \"50V\", \"100V\", \"200V\"].indexOf(Value)>=0)\n" \
-    "doRequest([\"CH\", Channel, \"voltDiv\", element.value, \"enabled\", 1, \"gnd\", 0, \"ac\", ac]);\n" \
+    "{\n" \
+    "chobj.gnd = 0;\n" \
+    "chobj.voltDiv = Value;\n" \
+    "}\n" \
     "else\n" \
     "if (Value == \"OFF\")\n" \
-    "doRequest([\"CH\", Channel, \"voltDiv\", chobj.voltDiv, \"enabled\", 0, \"gnd\", chobj.gnd, \"ac\", ac]);\n" \
+    "{\n" \
+    "chEnabled = 0;\n" \
+    "}\n" \
     "else\n" \
     "if (Value == \"GND\")\n" \
-    "doRequest([\"CH\", Channel, \"voltDiv\", chobj.voltDiv, \"enabled\", 1, \"gnd\", 1, \"ac\", ac]);\n" \
+    "{\n" \
+    "chobj.gnd = 1;\n" \
+    "}\n" \
     "else\n" \
     "if (Value == \"AC\")\n" \
-    "doRequest([\"CH\", Channel, \"voltDiv\", chobj.voltDiv, \"enabled\", 1, \"gnd\", chobj.gnd, \"ac\", 1]);\n" \
+    "{\n" \
+    "chobj.ac = 1;\n" \
+    "}\n" \
     "else\n" \
     "if (Value == \"DC\")\n" \
-    "doRequest([\"CH\", Channel, \"voltDiv\", chobj.voltDiv, \"enabled\", 1, \"gnd\", chobj.gnd, \"ac\", 0]);\n" \
+    "{\n" \
+    "chobj.ac = 0;\n" \
+    "}\n" \
     "else\n" \
+    "if (Value == \"INVERT\")\n" \
+    "{\n" \
+    "chobj.inverted = 1-chobj.inverted;\n" \
+    "}\n" \
+    "else\n" \
+    "{\n" \
     "console.log(\"invalid\", Value);\n" \
+    "return;\n" \
+    "}\n" \
+    "chobj.enabled = chEnabled;\n" \
+    "updateGuiElements();\n" \
+    "doRequest([\"CH\", Channel, \"voltDiv\", chobj.voltDiv, \"enabled\", chobj.enabled, \"gnd\", chobj.gnd, \"ac\", chobj.ac, \"inverted\", chobj.inverted]);\n" \
     "}\n" \
     "else\n" \
     "if (element.id == \"time_div\")\n" \
@@ -631,9 +654,10 @@
     "{\n" \
     "var ChVoltage = \"\";\n" \
     "var Color = (ChannelId == 1) ? \"red\" : \"blue\";\n" \
-    "var Info = \"<font color='\"+Color+\"'>CH\"+ChannelId+\"</font> \";\n" \
+    "var Info = \"<font color='\"+Color+\"'>CH\"+ChannelId+\"</font>\";\n" \
     "if (chObj.inverted)\n" \
     "Info = \"<font style='text-decoration: overline'>\"+Info+\"</font>\";\n" \
+    "Info += \" \";\n" \
     "if (chObj.gnd)\n" \
     "{\n" \
     "ChVoltage = \"GND\";\n" \

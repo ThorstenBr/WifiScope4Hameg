@@ -102,6 +102,8 @@ function getVoltageSelector(ChannelId)
 		"<option value=\"DC\">DC</option>"+
 		"<option value=\"AC\">AC</option>"+
 		"<option value=\"GND\">GND</option>"+
+		// Invert option is only supported for channel 2...
+		((ChannelId==1) ? "" : "<option value=\"INVERT\">INVERT</option>")+
 		"<option value=\"OFF\">OFF</option>"+
 		"</select>");
 }
@@ -396,23 +398,46 @@ function guiCallback(element)
 			chobj = HamegSetting.ch2;
 		}
 		var Value = element.value;
-		var ac = chobj.ac;
+		var chEnabled = 1;
 		if (["10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "5V", "10V", "20V", "50V", "100V", "200V"].indexOf(Value)>=0)
-			doRequest(["CH", Channel, "voltDiv", element.value, "enabled", 1, "gnd", 0, "ac", ac]);
+		{
+			chobj.gnd = 0;
+			chobj.voltDiv = Value;
+		}
 		else
 		if (Value == "OFF")
-			doRequest(["CH", Channel, "voltDiv", chobj.voltDiv, "enabled", 0, "gnd", chobj.gnd, "ac", ac]);
+		{
+			chEnabled = 0;
+		}
 		else
 		if (Value == "GND")
-			doRequest(["CH", Channel, "voltDiv", chobj.voltDiv, "enabled", 1, "gnd", 1, "ac", ac]);
+		{
+			chobj.gnd = 1;
+		}
 		else
 		if (Value == "AC")
-			doRequest(["CH", Channel, "voltDiv", chobj.voltDiv, "enabled", 1, "gnd", chobj.gnd, "ac", 1]);
+		{
+			chobj.ac = 1;
+		}
 		else
 		if (Value == "DC")
-			doRequest(["CH", Channel, "voltDiv", chobj.voltDiv, "enabled", 1, "gnd", chobj.gnd, "ac", 0]);
+		{
+			chobj.ac = 0;
+		}
 		else
+		if (Value == "INVERT")
+		{
+			chobj.inverted = 1-chobj.inverted;
+		}
+		else
+		{
 			console.log("invalid", Value);
+			return;
+		}
+
+		chobj.enabled = chEnabled;
+		updateGuiElements();
+		doRequest(["CH", Channel, "voltDiv", chobj.voltDiv, "enabled", chobj.enabled, "gnd", chobj.gnd, "ac", chobj.ac, "inverted", chobj.inverted]);
 	}
 	else
 	if (element.id == "time_div")
@@ -489,9 +514,10 @@ function updateChInfo(ChannelId, chObj)
 {
 	var ChVoltage = "";
 	var Color = (ChannelId == 1) ? "red" : "blue";
-	var Info = "<font color='"+Color+"'>CH"+ChannelId+"</font> ";
+	var Info = "<font color='"+Color+"'>CH"+ChannelId+"</font>";
 	if (chObj.inverted)
 		Info = "<font style='text-decoration: overline'>"+Info+"</font>";
+	Info += " ";
 	if (chObj.gnd)
 	{
 		ChVoltage = "GND";
