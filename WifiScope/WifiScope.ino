@@ -30,9 +30,9 @@
 #include <ESP8266WiFi.h>
 
 // pins for UART connecting the hameg scope (alternate RX/TX pins of UART0)
-#define UART_CTS D6
-#define UART_RX  D7 // cannot be changed: fixed alternate UART0 pin
-#define UART_TX  D8 // cannot be changed: fixed alternate UART0 pin
+#define HAMEG_RTS D6
+#define HAMEG_RXD D7 // cannot be changed: fixed alternate UART0 pin
+#define HAMEG_TXD D8 // cannot be changed: fixed alternate UART0 pin
 
 SoftwareSerial DebugSerial(RX, TX, false);
 
@@ -50,7 +50,7 @@ void debugPrintlnParam(const char* pStr, UInt32 Value)
 {
   DebugSerial.write(pStr);
   DebugSerial.print(Value);
-  DebugSerial.write("\n");
+  DebugSerial.write("\r\n");
 }
 
 void debugPrintHex(UInt32 Value, UInt8 Width)
@@ -123,9 +123,12 @@ void setupWifi()
   {
     if (Interactive_check())
     {
-      // very fast blinking while in interactive mode
-      blinkLed(50);
-      Interactive_loop();
+      while (true)
+      {
+        // very fast blinking while in interactive mode
+        blinkLed(50);
+        Interactive_loop();
+      }
     }
     else
     {
@@ -168,12 +171,12 @@ void setup()
   // serial interface to hameg (not the debug serial!)
   Serial.begin(115200);
 
-  // Define pin modes for alternate TX, RX and CTS pins
-  pinMode(UART_RX, INPUT);
-  pinMode(UART_TX, OUTPUT);
-  pinMode(UART_CTS, OUTPUT);
-  // set CTS
-  digitalWrite(UART_CTS, LOW);
+  // Define pin modes for alternate TXD, RXD and RTS pins
+  pinMode(HAMEG_RXD, INPUT);
+  pinMode(HAMEG_TXD, OUTPUT);
+  pinMode(HAMEG_RTS, OUTPUT);
+  // set RTS
+  digitalWrite(HAMEG_RTS, LOW);
   // swap UART0 to use alternate pins TX=GPIO15(D8), RX=GPIO13(D7)
   Serial.swap();
 
@@ -187,7 +190,11 @@ void setup()
   DebugSerial.begin(115200);
 
   // here we go: use debug serial
-  debugPrint("\n\nWifi Interface for Hameg Oscilloscopes " VERSION "\n");
+  debugPrint("\r\n\r\nWifi Interface for Hameg Oscilloscopes " VERSION "\r\n"
+#ifdef FEATURE_USE_EEPROM_CONFIG
+             "Send three dots ('...') to enter configuration mode.\r\n"
+#endif
+             );
 
 #ifdef FEATURE_USE_EEPROM_CONFIG
   // read EEPROM data

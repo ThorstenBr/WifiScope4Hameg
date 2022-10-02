@@ -191,20 +191,20 @@ bool Interactive_check()
   if (InputData)
   {
     int i=0;
-    int spaces=0;
+    int dots=0;
     while (InputData[i]!=0)
     {
-      if (InputData[i] == ' ')
+      if (InputData[i] == '.')
       {
-        spaces++;
+        dots++;
       }
       else
       {
-        spaces=0;
+        dots=0;
       }
       i++;
     }
-    if (spaces>=3)
+    if (dots>=3)
     {
       g_InteractiveMode = true;
     }
@@ -230,11 +230,12 @@ void Interactive_loop()
     if (ShowHelp)
     {
       ShowHelp = false;
-      DebugSerial.println("");
+      DebugSerial.println("\r\nConfiguration Menu\r\n");
       for (int i=0;pMenu[i]!=NULL;i++)
       {
         DebugSerial.println(pMenu[i]);
       }
+      DebugSerial.println("\r\nSelect number to configure?");
     }
   }
 }
