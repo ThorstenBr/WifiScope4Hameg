@@ -85,7 +85,6 @@ function toggleWideView()
 function getVoltageSelector(ChannelId)
 {
 	return ("<select id=\"ch"+ChannelId+"VoltDiv\" title=\"Select channel voltage settings\" onchange=\"guiCallback(this)\">"+
-		"<option value=\"\"></option>"+
 		"<option value=\"10mV\">10mV</option>"+
 		"<option value=\"20mV\">20mV</option>"+
 		"<option value=\"50mV\">50mV</option>"+
@@ -525,7 +524,7 @@ function updateChInfo(ChannelId, chObj)
 	else
 	{
 		document.getElementById("ch_info"+ChannelId).innerHTML = "<font color='#505050'>"+Info+"</font>"+Probe;
-		document.getElementById("ch"+ChannelId+"VoltDiv").value = "";
+		document.getElementById("ch"+ChannelId+"VoltDiv").value = "OFF";
 	}
 }
 

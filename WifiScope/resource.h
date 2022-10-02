@@ -269,7 +269,6 @@
     "function getVoltageSelector(ChannelId)\n" \
     "{\n" \
     "return (\"<select id=\\\"ch\"+ChannelId+\"VoltDiv\\\" title=\\\"Select channel voltage settings\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
-    "\"<option value=\\\"\\\"></option>\"+\n" \
     "\"<option value=\\\"10mV\\\">10mV</option>\"+\n" \
     "\"<option value=\\\"20mV\\\">20mV</option>\"+\n" \
     "\"<option value=\\\"50mV\\\">50mV</option>\"+\n" \
@@ -654,7 +653,6 @@
     "}\n" \
     "}\n" \
     "var Probe = \" <font color='#505050' id='probe\"+ChannelId+\"'>\"+chObj.probe+\"</font><br>\";\n" \
-    "console.log(\"ChVoltage\", ChVoltage);\n" \
     "if (chObj.enabled)\n" \
     "{\n" \
     "document.getElementById(\"ch_info\"+ChannelId).innerHTML = \"<b>\"+Info+\"</b>\"+Probe;\n" \
@@ -663,7 +661,7 @@
     "else\n" \
     "{\n" \
     "document.getElementById(\"ch_info\"+ChannelId).innerHTML = \"<font color='#505050'>\"+Info+\"</font>\"+Probe;\n" \
-    "document.getElementById(\"ch\"+ChannelId+\"VoltDiv\").value = \"\";\n" \
+    "document.getElementById(\"ch\"+ChannelId+\"VoltDiv\").value = \"OFF\";\n" \
     "}\n" \
     "}\n" \
     "function updateGuiElements()\n" \
