@@ -20,6 +20,7 @@
 
 extern const PROGMEM char* const VoltageStrings[];
 
+#if 0
 void debugError(UInt32 id)
 {
   digitalWrite(BUILTIN_LED, HIGH);
@@ -34,6 +35,7 @@ void debugError(UInt32 id)
   }
   delay(2000);
 }
+#endif
 
 static Hameg* s_pSingleton = NULL;
     
@@ -93,6 +95,10 @@ bool Hameg::connect()
   if (m_DeviceId.length() == 0)
   {
     m_DeviceId = getDeviceID();
+  }
+  if (m_FrontControllerVersion.length() == 0)
+  {
+    m_FrontControllerVersion = getFrontControllerVersion();
   }
 
   //debugPrint("Init OK...\n");
@@ -167,15 +173,15 @@ bool Hameg::setCH(UInt8 Channel, UInt8 VoltDiv, UInt8 Enabled, UInt8 AC, UInt8 I
   return true;
 }
 
-bool Hameg::setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZEnabled)
+bool Hameg::setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZInput)
 {
   char Buf[6];
   sprintf(Buf, "TBA=X");
   if (Single)
     Single = 0x20;
-  if (ZEnabled)
-    ZEnabled = 0x80;
-  Buf[4] = TimeDiv|Single|ZEnabled;
+  if (ZInput)
+    ZInput = 0x80;
+  Buf[4] = TimeDiv|Single|ZInput;
   if (!_command(5, Buf, 3))
     return false;
   return true;
@@ -236,6 +242,27 @@ const char* Hameg::getDeviceID()
   
   m_Buffer[3+27-2] = 0; // drop \r\n at the end of the ID
   return &m_Buffer[3];
+}
+
+const char* Hameg::getFrontControllerVersion()
+{
+  if (!_command(5, "VERS?", 5+15))
+    return NULL;
+  if (!_hasPrefix("VERS:"))
+    return NULL;
+
+  UInt8 Size = 5+15;
+  // There is usually a \r\n at the end of the reported version.
+  // However, the protocol does not specify a line-ending (unlike for the "ID?" command),
+  // so these bytes are part of the returned payload - and we cannot be sure if all
+  // devices return a \r\n.
+  // => So we just add a check and cut it off, if found...
+  if (m_Buffer[Size-1] == '\n')
+    Size--;
+  if (m_Buffer[Size-1] == '\r')
+    Size--;
+  m_Buffer[Size] = 0; // drop \r\n at the end
+  return &m_Buffer[5];
 }
 
 // Hold Wave Form (signal capture is paused?)
@@ -486,6 +513,7 @@ std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1)
   UInt8 BWL  = (b & 0x20)>0;
   UInt8 AltTrig = (b & 0x80)>0;
   UInt8 SingleShot = (pDDF[3] & 0x20)>0;
+  UInt8 ZInput = (pDDF[3] & 0x80)>0;
   UInt8 TBA = pDDF[3] & 0x1f;
   ULong64 TBA_nS = hameg_nS(TBA);
 
@@ -585,6 +613,7 @@ std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1)
           "\"bwl\": %hhu,\n"
           "\"tba\": %hhu,\n"
           "\"tba_nS\": %llu,\n"
+          "\"zInput\": %hhu,\n"
           "\"xPosition\": %hi"
           ,
           pTriggerSrc,
@@ -605,6 +634,7 @@ std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1)
           BWL,
           TBA,
           TBA_nS,
+          ZInput,
           XPos
           ) >= sizeof(Buf))
   {
@@ -637,7 +667,11 @@ bool Hameg::getJSONData(std::string& json)
 
   {
     char Buf[256];
-    snprintf(Buf, sizeof(Buf), "\"deviceId\": \"%s\",\n", m_DeviceId.c_str());
+    snprintf(Buf, sizeof(Buf),
+             "\"deviceId\": \"%s\",\n"
+             "\"FcVersion\": \"%s\",\n",
+             m_DeviceId.c_str(),
+             m_FrontControllerVersion.c_str());
     json.append(Buf);
     json.append("\"data\": {\n");
 

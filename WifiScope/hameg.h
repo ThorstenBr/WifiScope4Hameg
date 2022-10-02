@@ -12,6 +12,8 @@ class Hameg
     bool disconnect();
     
     const char* getDeviceID();
+    const char* getFrontControllerVersion();
+
     bool getHoldWaveForm();
     bool setHoldWaveForm(UInt8 Hold);
     
@@ -29,7 +31,7 @@ class Hameg
     bool getReferenceWaveForm(UInt8 Channel, std::string& json);
 
     bool setCH(UInt8 Channel, UInt8 VoltDiv, UInt8 Enabled, UInt8 AC, UInt8 Inverted, UInt8 GND);
-    bool setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZEnabled);
+    bool setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZInput);
     bool setStoreMode(UInt8 Mode, UInt8 PreTrigger, UInt8 Ref1, UInt8 Ref2);
     bool setTrigger(UInt8 FallingEdge, UInt8 PeakPeak, UInt8 Norm, UInt8 Coupling);
     bool autoSet();
@@ -40,6 +42,7 @@ class Hameg
     char m_Buffer[2048+20];
     UInt32 m_BufferByteCount;
     String m_DeviceId;
+    String m_FrontControllerVersion;
 
     bool _hasPrefix(const char* pPrefix, const char* pBuffer=NULL);
     void _write(UInt32 ByteCount, const char* pData);

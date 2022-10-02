@@ -148,10 +148,10 @@ void handle_Set()
       else
       if (ParamName == "TBA")
       {
-        UInt8 TimeDiv  = getParameterInt("timeDiv", 3);
-        UInt8 Single   = getParameterInt("single", 0);
-        UInt8 ZEnabled = getParameterInt("z", 0);
-        Ok = g_pHameg->setTBA(TimeDiv, Single, ZEnabled);
+        UInt8 TimeDiv = getParameterInt("timeDiv", 3);
+        UInt8 Single  = getParameterInt("single", 0);
+        UInt8 ZInput  = getParameterInt("zInput", 0);
+        Ok = g_pHameg->setTBA(TimeDiv, Single, ZInput);
       }
       else
       if (ParamName == "STORE_MODE")

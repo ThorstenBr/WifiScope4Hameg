@@ -63,14 +63,6 @@ function xAxisTicks(value, index, ticks)
 	return toTimebaseStrNS(index*HamegSetting.tba_nS);
 }
 
-//function toVoltStr_mV(v)
-//{
-//	if (v<1000)
-//		return ""+v+"mV";
-//	v /= 1000;
-//	return ""+v+"V";
-//}
-
 var WideView=false;
 function toggleWideView()
 {
@@ -442,7 +434,7 @@ function guiCallback(element)
 	else
 	if (element.id == "time_div")
 	{
-		doRequest(["TBA", 0, "timeDiv", element.value, "single", 0]);
+		doRequest(["TBA", 0, "timeDiv", element.value, "single", HamegSetting.trigger.singleShot, "zInput", HamegSetting.zInput]);
 	}
 	else
 	if (element.id == "autoset")
@@ -472,13 +464,21 @@ function guiCallback(element)
 
 		if (["-75%", "-50%", "-25%", "0%", "25%", "50%", "75%", "100%"].indexOf(Value)>-1)
 		{
-		   doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", Value, "ref1", Ref1, "ref2", Ref2]);
+			doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", Value, "ref1", Ref1, "ref2", Ref2]);
 		}
 		else
 		if (["RFR", "AVR", "ROL", "ENV", "SGL"].indexOf(Value)>-1)
 		{
-		   Mode = Value;
-		   doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", Ref1, "ref2", Ref2]);
+			Mode = Value;
+			if (((HamegSetting.trigger.singleShot)&&(Value != "SGL"))||
+			    ((!HamegSetting.trigger.singleShot)&&(Value == "SGL")))
+			{
+				// need to enable or disable single shot mode first
+				HamegSetting.trigger.singleShot = (Value == "SGL") ? 1 : 0;
+				doRequest(["TBA", 0, "timeDiv", HamegSetting.tba, "single", HamegSetting.trigger.singleShot, "zInput", HamegSetting.zInput]);
+			}
+			if (Value != "SGL")
+				doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", Ref1, "ref2", Ref2]);
 		}
 	}
 	else
@@ -582,7 +582,6 @@ function updateGuiElements()
 	document.getElementById("trigger_source").value = HamegSetting.trigger.source;
 
 	document.getElementById("store_mode").value = HamegSetting.trigger.storeMode;
-	//var t = toTimebaseStrNS(HamegSetting.tba_nS);
 	document.getElementById("time_div").value = HamegSetting.tba;
 
 	// update details on channel 1+2
