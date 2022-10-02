@@ -196,7 +196,7 @@ function addGuiElements(ScopeTable)
 	GuiCells.Trigger = TopRow.insertCell(1);
 	GuiCells.Note = TopRow.insertCell(2);
 	GuiCells.Note.innerHTML = "<textarea rows='2' cols='60' spellcheck='false' title='comments, notes, free text area...'></textarea>";
-	GuiCells.Note.colSpan = 2
+	GuiCells.Note.colSpan = 2;
 
 	GuiCells.Hold = TopRow.insertCell(3);
 	GuiCells.Hold.style.fontWeight = "bold";
@@ -314,7 +314,7 @@ DynamicLoader.prototype.callback = function()
 		}
 		processData(Charts[0], TextData);
 	}
-}
+};
 
 DynamicLoader.prototype.load = function(cb)
 {
@@ -517,7 +517,6 @@ function updateChInfo(ChannelId, chObj)
 
 	var Probe = " <font color='#505050' id='probe"+ChannelId+"'>"+chObj.probe+"</font><br>";
 
-	console.log("ChVoltage", ChVoltage);
 	if (chObj.enabled)
 	{
 		document.getElementById("ch_info"+ChannelId).innerHTML = "<b>"+Info+"</b>"+Probe;

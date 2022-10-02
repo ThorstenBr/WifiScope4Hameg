@@ -16,13 +16,13 @@
 
 INDEX_FILE = html/index.html
 JS_FILE = html/hamegControl.js
-
+PNG_FILE = html/favicon.png
 OUTPUT_FILE = WifiScope/resource.h
 
 TOOL = tools/file2header.py
 
 all: $(OUTPUT_FILE)
 
-$(OUTPUT_FILE): $(INDEX_FILE) $(JS_FILE) $(TOOL)
-	python3 $(TOOL) --strip --file $(INDEX_FILE) --file $(JS_FILE) > $(OUTPUT_FILE)
+$(OUTPUT_FILE): $(INDEX_FILE) $(JS_FILE) $(PNG_FILE) $(TOOL)
+	python3 $(TOOL) --strip --file $(INDEX_FILE) --file $(JS_FILE) --file $(PNG_FILE) > $(OUTPUT_FILE)
 

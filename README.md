@@ -62,13 +62,13 @@ The required connections are pretty simple:
 * One of the RS232 inputs of the MAX3232 is connected to the DB9 connector **pin 2** (RXD).
 * The TTL output of the MAX3232 is connected to ESP's pin **D7**.
 
-| ESP8266            | MAX3232: TTL side     | - | MAX3232: RS232 side      | DB9 RS232 connector |
-|--------------------|-----------------------|---|--------------------------|---------------------|
-| **GND**            | **GND**               |   | **GND**                  | **pin 5** (GND)
-| **3V3** (not 5V!)  | **VCC**               |   | -                        | -
-| **D8** (TXD)       | **TTL in 1** (top)    |   | **RS232 out 1** (top)    | **pin 3** (TXD)
-| **D7** (RXD)       | **TTL out 1** (top)   |   | **RS232 in 1** (top)     | **pin 2** (RXD)
-| **D6** (RTS)       | **TTL in 2** (bottom) |   | **RS232 out 2** (bottom) | **pin 7** (RTS)
+| ESP8266                | MAX3232: TTL side     | - | MAX3232: RS232 side      | DB9 RS232 connector |
+|------------------------|-----------------------|---|--------------------------|---------------------|
+| **GND**                | **GND**               |   | **GND**                  | **pin 5** (GND)
+| **3V3** (*not 5V!*)    | **VCC**               |   | -                        | -
+| **D8** (TXD)           | **TTL in 1** (top)    |   | **RS232 out 1** (top)    | **pin 3** (TXD)
+| **D7** (RXD)           | **TTL out 1** (top)   |   | **RS232 in 1** (top)     | **pin 2** (RXD)
+| **D6** (RTS)           | **TTL in 2** (bottom) |   | **RS232 out 2** (bottom) | **pin 7** (RTS)
 
 ![Required Parts](/Images/connections.png)
 

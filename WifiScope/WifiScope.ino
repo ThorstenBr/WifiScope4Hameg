@@ -1,5 +1,5 @@
 /*
- WifiScope.ino - Wifi support for Hameg oscilloscopes.
+ WifiScope.ino - WiFi support for Hameg oscilloscopes.
 
  Copyright (c) 2022 Thorsten Brehm.
 
@@ -84,9 +84,9 @@ void blinkLed(long LedBlinkIntervalMs)
     digitalWrite(BUILTIN_LED, (s_LedState) ? HIGH : LOW);
   }
 }
-void setupWifi()
+void setupWiFi()
 {
-  // use WIFI settings from device's config section
+  // use WiFi settings from device's config section
 #ifdef FEATURE_USE_EEPROM_CONFIG
   if (!ConfigData_ok())
   {
@@ -103,7 +103,7 @@ void setupWifi()
   const char* host = CONFIG_WIFI_HOSTNAME;
 #endif
   
-  DebugSerial.print("WIFI: Connecting '");
+  DebugSerial.print("WiFi: Connecting '");
   DebugSerial.print(ssid);
   DebugSerial.print("'...");
 
@@ -190,7 +190,7 @@ void setup()
   DebugSerial.begin(115200);
 
   // here we go: use debug serial
-  debugPrint("\r\n\r\nWifi Interface for Hameg Oscilloscopes " VERSION "\r\n"
+  debugPrint("\r\n\r\nWiFi Interface for Hameg Oscilloscopes " VERSION "\r\n"
 #ifdef FEATURE_USE_EEPROM_CONFIG
              "Send three dots ('...') to enter configuration mode.\r\n"
 #endif
@@ -206,7 +206,7 @@ void setup()
 #endif
 
   // configure WIFI
-  setupWifi();
+  setupWiFi();
 
   // create hameg control instance
   Hameg::setup(&Serial);

@@ -24,13 +24,15 @@
 /***********************************************************************/
 /* string constants (in program memory to save RAM)                    */
 /***********************************************************************/
-const PROGMEM char File_ControlJS[] = HAMEGCONTROL_JS;
-const PROGMEM char File_IndexHTML[] = INDEX_HTML;
-const PROGMEM char MimeTypeHtml[]   = "text/html";
-const PROGMEM char MimeTypePlain[]  = "text/plain";
-const PROGMEM char MimeTypeCsv[]    = "text/csv";
-const PROGMEM char MimeTypeJS[]     = "application/javascript";
-const PROGMEM char MimeTypeJSON[]   = "application/json";
+const PROGMEM char File_ControlJS[]  = HAMEGCONTROL_JS;
+const PROGMEM char File_IndexHTML[]  = INDEX_HTML;
+const PROGMEM char File_FaviconPNG[] = FAVICON_PNG;
+const PROGMEM char MimeTypeHtml[]    = "text/html";
+const PROGMEM char MimeTypePlain[]   = "text/plain";
+const PROGMEM char MimeTypeCsv[]     = "text/csv";
+const PROGMEM char MimeTypePNG[]     = "image/png";
+const PROGMEM char MimeTypeJS[]      = "application/javascript";
+const PROGMEM char MimeTypeJSON[]    = "application/json";
 
 /***********************************************************************/
 /* string arrays (in program memory to save RAM)                       */
@@ -105,13 +107,19 @@ static UInt32 getParameterInt(String Name, UInt32 Default)
 // main index page (scope)
 void handle_Index()
 {
-  g_pWebServer->send(200, MimeTypeHtml, File_IndexHTML);
+  g_pWebServer->send(200, MimeTypeHtml, File_IndexHTML, sizeof(File_IndexHTML)-1);
 }
 
 // javascript file contents
 void handle_ControlJS()
 {
-  g_pWebServer->send(200, MimeTypeJS, File_ControlJS);
+  g_pWebServer->send(200, MimeTypeJS, File_ControlJS, sizeof(File_ControlJS)-1);
+}
+
+void handle_FaviconPNG()
+{
+  debugPrintHex(sizeof(File_FaviconPNG), 4);
+  g_pWebServer->send(200, MimeTypePNG, File_FaviconPNG, sizeof(File_FaviconPNG));
 }
 
 // webserver "set" hook, sending commands to the Hameg scope
@@ -263,6 +271,7 @@ void WebServer_setup(UInt32 PortNumber)
   // configure content callbacks
   g_pWebServer->on("/",                handle_Index);
   g_pWebServer->on("/hamegControl.js", handle_ControlJS);
+  g_pWebServer->on("/favicon.png",     handle_FaviconPNG);
   g_pWebServer->on("/data",            handle_Data);
   g_pWebServer->on("/csv",             handle_Csv);
   g_pWebServer->on("/set",             handle_Set);

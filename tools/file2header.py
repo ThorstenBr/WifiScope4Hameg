@@ -21,15 +21,36 @@ DoStrip = False
 
 def convertFile(inFile):
 	#print("converting", inFile, "==>", outFile)
+
+	IsBinary = inFile.endswith(".png")
+	if IsBinary:
+		# process binary data file
+		f = open(inFile, "rb")
+		d = f.read()
+		f.close()
+
+		l = []
+		s = ""
+		for e in d:
+			s += "\\x%02x" % (e,)
+			if len(s)>80:
+				l.append(s)
+				s = ""
+		if s!="":
+			l.append(s)
+	else:
+		# process ASCII file
+		f = open(inFile, "r")
+		l = f.readlines()
+		f.close()
 	
-	f = open(inFile, "r")
-	l = f.readlines()
-	f.close()
-	
+	IsJavaScript = False # inFile.endswith(".js")
+
 	FileName = os.path.basename(inFile)
 	FileName = FileName.replace(".", "_")
 	FileName = FileName.upper()
 	out = ["#define "+FileName+" \\"]
+	LastLine = ""
 	for e in l:
 		if DoStrip:
 			e = e.strip()
@@ -40,9 +61,19 @@ def convertFile(inFile):
 		else:
 			while (e!="")and((e[-1]=="\n")or(e[-1]=="\x0d")):
 				e = e[:-1]
-		e = e.replace("\\", "\\\\")
-		e = e.replace("\"", "\\\"")
-		e = "    \"%s\\n\" \\" % (e,)
+		if IsBinary:
+			e = "    \"%s\" \\" % (e,)
+		else:
+			e = e.replace("\\", "\\\\")
+			e = e.replace("\"", "\\\"")
+			if (DoStrip)and(IsJavaScript):
+				# check if a separator (whitespace) is required at beginning of this line
+				if (LastLine=="")or(not (LastLine[-1] in [",", ";", "{"])):
+					e = " "+e
+				LastLine = e
+				e = "    \"%s\" \\" % (e,)
+			else:
+				e = "    \"%s\\n\" \\" % (e,)
 		out.append(e)
 	
 	out.append("")
