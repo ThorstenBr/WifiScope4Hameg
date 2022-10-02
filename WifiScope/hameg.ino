@@ -115,7 +115,6 @@ bool Hameg::disconnect()
     return true;
   m_Connected = false;
   bool ok = _command(5, "RM0\x0d\n", 3);
-  delay(1000);
   return ok;
 }
     
