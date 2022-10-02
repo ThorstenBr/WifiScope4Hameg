@@ -201,7 +201,7 @@ function addGuiElements(ScopeTable)
 	
 	var wide = "<button id=\"wide\" onclick=\"toggleWideView();\" title=\"Toggle wide display\">&#10231;</button>";
 	var autoset = '<button type="button" id="autoset" onclick="guiCallback(this);" title=\"Automaticaly adapt oscilloscope settings to signals\">AUTOSET</button>'; 
-	var reset_single = '<button type="button" id="reset_single" onclick="guiCallback(this);" title="Reset single trigger">RES</button>'; 
+	var reset_single = '<button type="button" id="reset_single" onclick="guiCallback(this);" title="Reset trigger (in single mode only)">RES</button>';
 	var trigger_edge = '<button type="button" id="trigger_edge" onclick="guiCallback(this);" title="Trigger on rising or falling edge">TRIG &uarr;</button>'; 
 	
 	var update = '<button type="button" id="update" onclick="updateData();" title=\"Refresh display\">UPDATE</button>';
@@ -596,6 +596,20 @@ function updateGuiElements()
 	else
 	{
 		ref.value = (HamegSetting.data.reference2 === undefined) ? "REF1" : "REF2";
+	}
+
+	var resetSingle = document.getElementById("reset_single");
+	if (HamegSetting.trigger.singleShot)
+	{
+		resetSingle.disabled = 0;
+		resetSingle.style.background = (HamegSetting.trigger.status == 2) ? "#00b000" : "";
+		resetSingle.style.color = "white";
+	}
+	else
+	{
+		resetSingle.disabled = 1;
+		resetSingle.style.background = "#202020";
+		resetSingle.style.color = "#808080";
 	}
 
 	BlockGuiCallbacks = false;

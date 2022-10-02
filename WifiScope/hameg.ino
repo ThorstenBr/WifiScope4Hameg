@@ -19,6 +19,7 @@
 #include "hameg.h"
 
 extern const PROGMEM char* const VoltageStrings[];
+extern void bin2HexStr(const char* pData, UInt32 Size, std::string& str);
 
 #if 0
 void debugError(UInt32 id)
@@ -52,7 +53,8 @@ Hameg* Hameg::getSingleton()
 
 Hameg::Hameg(HardwareSerial* pSerial) :
  m_pSerial(pSerial),
- m_BufferByteCount(0)
+ m_BufferByteCount(0),
+ m_Connected(false)
 {
 }
 
@@ -68,6 +70,8 @@ bool Hameg::connect()
     // wait a bit, maybe more characters pending?
     delay(10);
   }
+
+  m_Connected = true;
 
   _write(1, "\x20");
   delay(10); // allow some time for baudrate detection
@@ -107,6 +111,9 @@ bool Hameg::connect()
 
 bool Hameg::disconnect()
 {
+  if (!m_Connected)
+    return true;
+  m_Connected = false;
   bool ok = _command(5, "RM0\x0d\n", 3);
   delay(1000);
   return ok;
@@ -328,22 +335,8 @@ bool Hameg::getJsonWaveForm(UInt8 Channel, std::string& json)
       return false;
   }
 
-  {
-    char s[256];
-    UInt32 p=0;
-    for (UInt32 i=0;i<2048;i++)
-    {
-      sprintf(&s[p], "%02x", pData[i]);
-      p+=2;
-      if (p+2>=256)
-      {
-        json.append(s);
-        p=0;
-        s[0] = 0;
-      }
-    }
-    json.append(s);
-  }
+  // convert raw binary data to hex string
+  bin2HexStr(pData, 2048, json);
 
   json.append("\"");
   return true;
@@ -416,6 +409,24 @@ bool Hameg::readRODDF(UInt16 pRODDF[5])
   if (!_hasPrefix("RODDF:"))
     return false;
   memcpy(pRODDF, &m_Buffer[6], 10);
+  return true;
+}
+
+bool Hameg::getTriggerStatus(UInt8* pTriggerStatus)
+{
+  if (!_command(7, "TRGSTA?", 7+1))
+    return false;
+  if (!_hasPrefix("TRGSTA:"))
+    return false;
+
+  UInt8 TriggerStatus = m_Buffer[7];
+
+  // See protocol spec: depending on FC version the result is either binary or ASCII encoded.
+  // => we convert '0'..'9' to binary.
+  if ((TriggerStatus >= '0')&&(TriggerStatus <= '9'))
+    TriggerStatus -= '0';
+
+  *pTriggerStatus = TriggerStatus;
   return true;
 }
 
@@ -504,7 +515,7 @@ std::string getChannelDDFData(UInt8 ChannelId, UInt8* pDDF, UInt16* pDDF1)
   return std::string(Buf);
 }
 
-std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1)
+std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus)
 {
   UInt8 b = pDDF[2];
   
@@ -591,9 +602,10 @@ std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1)
   UInt16 TriggerLevelB = pDDF1[5];
   Int16  DelPos        = (Int16) pDDF1[7];
 
-  char Buf[300];
+  char Buf[512];
   if (snprintf(Buf, sizeof(Buf),
           "\"trigger\": {\n"
+          "\"status\": %hhu,\n"
           "\"source\": \"%s\",\n"
           "\"preTrigger\": \"%hhi%%\",\n"
           "\"singleShot\": %hhu,\n"
@@ -616,6 +628,7 @@ std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1)
           "\"zInput\": %hhu,\n"
           "\"xPosition\": %hi"
           ,
+          TriggerStatus,
           pTriggerSrc,
           PreTriggerP,
           SingleShot,
@@ -644,25 +657,27 @@ std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1)
   return std::string(Buf);
 }
 
-void Hameg::ddf2json(UInt8* pDDF, UInt16* pDDF1, std::string& json)
+void ddf2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, std::string& json)
 {
   json.append(getChannelDDFData(1, pDDF, pDDF1));
   json.append(",\n");
   json.append(getChannelDDFData(2, pDDF, pDDF1));
   json.append(",\n");
-  json.append(getTriggerDDF(pDDF, pDDF1));
+  json.append(getTriggerDDF(pDDF, pDDF1, TriggerStatus));
 }
 
 bool Hameg::getJSONData(std::string& json)
 {
   UInt8  DDF[14];
   UInt16 DDF1[8];
+  UInt8  TriggerStatus;
   
   if (!readDDF(DDF))
     return false;
   if (!readDDF1(DDF1))
     return false;
-
+  if (!getTriggerStatus(&TriggerStatus))
+    return false;
   json = "{\n";
 
   {
@@ -709,7 +724,7 @@ bool Hameg::getJSONData(std::string& json)
     json.append("\n},\n");
   }
 
-  ddf2json(DDF, DDF1, json);
+  ddf2json(DDF, DDF1, TriggerStatus, json);
 
   json.append(",\n");
   if (getHoldWaveForm())

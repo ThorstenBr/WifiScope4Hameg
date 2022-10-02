@@ -380,7 +380,7 @@
     "GuiCells.ButtonsRight = MiddleRow.cells[2];\n" \
     "var wide = \"<button id=\\\"wide\\\" onclick=\\\"toggleWideView();\\\" title=\\\"Toggle wide display\\\">&#10231;</button>\";\n" \
     "var autoset = '<button type=\"button\" id=\"autoset\" onclick=\"guiCallback(this);\" title=\\\"Automaticaly adapt oscilloscope settings to signals\\\">AUTOSET</button>';\n" \
-    "var reset_single = '<button type=\"button\" id=\"reset_single\" onclick=\"guiCallback(this);\" title=\"Reset single trigger\">RES</button>';\n" \
+    "var reset_single = '<button type=\"button\" id=\"reset_single\" onclick=\"guiCallback(this);\" title=\"Reset trigger (in single mode only)\">RES</button>';\n" \
     "var trigger_edge = '<button type=\"button\" id=\"trigger_edge\" onclick=\"guiCallback(this);\" title=\"Trigger on rising or falling edge\">TRIG &uarr;</button>';\n" \
     "var update = '<button type=\"button\" id=\"update\" onclick=\"updateData();\" title=\\\"Refresh display\\\">UPDATE</button>';\n" \
     "var ref = getReferenceSelector();\n" \
@@ -586,7 +586,7 @@
     "else\n" \
     "if (element.id == \"time_div\")\n" \
     "{\n" \
-    "doRequest([\"TBA\", 0, \"timeDiv\", element.value, \"single\", 0]);\n" \
+    "doRequest([\"TBA\", 0, \"timeDiv\", element.value, \"single\", HamegSetting.trigger.singleShot, \"zInput\", HamegSetting.zInput]);\n" \
     "}\n" \
     "else\n" \
     "if (element.id == \"autoset\")\n" \
@@ -621,6 +621,13 @@
     "if ([\"RFR\", \"AVR\", \"ROL\", \"ENV\", \"SGL\"].indexOf(Value)>-1)\n" \
     "{\n" \
     "Mode = Value;\n" \
+    "if (((HamegSetting.trigger.singleShot)&&(Value != \"SGL\"))||\n" \
+    "((!HamegSetting.trigger.singleShot)&&(Value == \"SGL\")))\n" \
+    "{\n" \
+    "HamegSetting.trigger.singleShot = (Value == \"SGL\") ? 1 : 0;\n" \
+    "doRequest([\"TBA\", 0, \"timeDiv\", HamegSetting.tba, \"single\", HamegSetting.trigger.singleShot, \"zInput\", HamegSetting.zInput]);\n" \
+    "}\n" \
+    "if (Value != \"SGL\")\n" \
     "doRequest([\"STORE_MODE\", 0, \"mode\", Mode, \"preTrigger\", HamegSetting.trigger.preTrigger, \"ref1\", Ref1, \"ref2\", Ref2]);\n" \
     "}\n" \
     "}\n" \
@@ -721,6 +728,19 @@
     "else\n" \
     "{\n" \
     "ref.value = (HamegSetting.data.reference2 === undefined) ? \"REF1\" : \"REF2\";\n" \
+    "}\n" \
+    "var resetSingle = document.getElementById(\"reset_single\");\n" \
+    "if (HamegSetting.trigger.singleShot)\n" \
+    "{\n" \
+    "resetSingle.disabled = 0;\n" \
+    "resetSingle.style.background = (HamegSetting.trigger.status == 2) ? \"#00b000\" : \"\";\n" \
+    "resetSingle.style.color = \"white\";\n" \
+    "}\n" \
+    "else\n" \
+    "{\n" \
+    "resetSingle.disabled = 1;\n" \
+    "resetSingle.style.background = \"#202020\";\n" \
+    "resetSingle.style.color = \"#808080\";\n" \
     "}\n" \
     "BlockGuiCallbacks = false;\n" \
     "}\n" \

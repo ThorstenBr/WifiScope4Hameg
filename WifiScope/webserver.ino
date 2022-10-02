@@ -100,9 +100,32 @@ static UInt32 getParameterInt(String Name, UInt32 Default)
   return atoi(s.c_str());
 }
 
+void bin2HexStr(const UInt8* pData, UInt32 Size, std::string& str)
+{
+  char s[256];
+  UInt32 p=0;
+  for (UInt32 i=0;i<Size;i++)
+  {
+    sprintf(&s[p], "%02x", pData[i]);
+    p+=2;
+    if (p+2>=256)
+    {
+      str.append(s);
+      p = 0;
+      s[0] = 0;
+    }
+  }
+  str.append(s);
+}
+
 /***********************************************************************/
 /* webserver content handlers                                          */
 /***********************************************************************/
+
+void handle_ComError()
+{
+  g_pWebServer->send(500, MimeTypePlain, "ERROR: Unable to communicate with HAMEG scope.");
+}
 
 // main index page (scope)
 void handle_Index()
@@ -195,6 +218,7 @@ void handle_Set()
       }
       else
       {
+        g_pHameg->disconnect();
         g_pWebServer->send(500, MimeTypePlain, "ERROR: Unknown parameter.");
         return;
       }
@@ -235,6 +259,7 @@ void handle_Data()
     std::string json;
     if (g_pHameg->getJSONData(json))
     {
+      g_pHameg->disconnect();
       g_pWebServer->send(200, MimeTypeJSON, json.c_str());
       ok = true;
     }
@@ -243,10 +268,62 @@ void handle_Data()
 
   if (!ok)
   {
-    g_pWebServer->send(500, MimeTypePlain, "ERROR: Unable to communicate with HAMEG scope.");
+    handle_ComError();
   }
 }
 
+void handle_Debug()
+{
+  bool err = false;
+  if (g_pHameg->connect())
+  {
+    std::string json;
+    json.append("{\n");
+
+    UInt8 DDF[14];
+    if (g_pHameg->readDDF(DDF))
+    {
+      json.append("\"ddf\": \"");
+      bin2HexStr(DDF, sizeof(DDF), json);
+      json.append("\",\n");
+    }
+    else
+      err = true;
+
+    UInt16 DDF1[8];
+    if (g_pHameg->readDDF1(DDF1))
+    {
+      json.append("\"ddf1\": \"");
+      bin2HexStr((UInt8*) DDF1, sizeof(DDF1), json);
+      json.append("\",\n");
+    }
+    else
+      err = true;
+
+    UInt16 RODDF[5];
+    if (g_pHameg->readRODDF(RODDF))
+    {
+      json.append("\"roddf\": \"");
+      bin2HexStr((UInt8*)RODDF, sizeof(RODDF), json);
+      json.append("\"\n");
+    }
+    else
+      err = true;
+
+    json.append("}");
+    
+    g_pHameg->disconnect();
+
+    if (!err)
+      g_pWebServer->send(200, MimeTypeJSON, json.c_str());
+  }
+
+  if (err)
+  {
+    handle_ComError();
+  }
+}
+  
 // handler for invalid URLs
 void handle_NotFound()
 {
@@ -275,6 +352,11 @@ void WebServer_setup(UInt32 PortNumber)
   g_pWebServer->on("/data",            handle_Data);
   g_pWebServer->on("/csv",             handle_Csv);
   g_pWebServer->on("/set",             handle_Set);
+
+  // debugging access
+  g_pWebServer->on("/debug",           handle_Debug);
+
+  // error handler
   g_pWebServer->onNotFound(            handle_NotFound);
 
   // ... and go!

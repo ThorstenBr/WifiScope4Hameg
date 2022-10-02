@@ -21,7 +21,8 @@ class Hameg
     bool readDDF1 (UInt16 pDDF1[8]);
     bool readRODDF(UInt16 pRODDF[5]);
 
-    void ddf2json(UInt8* pDDF, UInt16* pDDF1, std::string& json);
+    bool getTriggerStatus(UInt8* pTriggerStatus);
+
     bool getJSONData(std::string& json);
     UInt8* getChannelWaveForm(UInt8 Channel);
     bool getJsonWaveForm(UInt8 Channel, std::string& json);
@@ -50,6 +51,7 @@ class Hameg
     bool _command(UInt32 WriteByteCount, const char* pData, UInt32 ReadByteCount, char* pBuffer=NULL, UInt32 TimeoutMs=500);
 
   private:
+    bool m_Connected;
     Hameg(HardwareSerial* pSerial);
 };
 
