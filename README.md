@@ -79,8 +79,8 @@ Please note these hints to avoid confusion:
 * Do not mix up the TTL and RS232 side of the MAX3232 module. The module is immediately destroyed if a TTL pin was connected to an RS232 (12V) signal (don't ask me how I would know... :-) ).
 * Do not use the ESP pins labeled "TX" and "RX". These are already connected to the module's onboard USB host device (CH340). They cannot be used for the Hameg RS232 connection. Hence, D7 and D8 are used for the RXD/TXD connection to the Hameg scope instead.
 * A simple two-wire TX/RX connection does not suffice. The Hameg device also requires RTS. The common trick of simply looping CTS + RTS locally at the DB9 connector also does _not_ work. The Hameg interface will not accept commands unless a proper RTS signal is provided.
-* The MAX2323 modules ("China modules") have 4 GND and 4 Vcc connector pads (top & bottom side, TTL & RS232 side). All GND and all VCC pads are connected - it doesn't matter which GND or which VCC pads you use.
-* These MAX2323 modules also provide one input and one output at each side - on the top and on the bottom. The top/bottom inputs/outputs are _not_ connected and refer to separate input/output signals. Hence, they support _two_ inputs and _two_ outputs in each direction.
+* The MAX3232 modules ("China modules") have 4 GND and 4 Vcc connector pads (top & bottom side, TTL & RS232 side). All GND and all VCC pads are connected - it doesn't matter which GND or which VCC pads you use.
+* These MAX3232 modules also provide one input and one output at each side - on the top and on the bottom. The top/bottom inputs/outputs are _not_ connected and refer to separate input/output signals. Hence, they support _two_ inputs and _two_ outputs in each direction.
 
 ## Configuring the Device
 The WiFi module needs configuration data: the WiFi SSID & password. You should also set a hostname and configure the port for the web/browser interface (like port 80 or 8080 etc).

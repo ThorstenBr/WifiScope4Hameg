@@ -21,6 +21,14 @@
 extern const PROGMEM char* const VoltageStrings[];
 extern void bin2HexStr(const char* pData, UInt32 Size, std::string& str);
 
+#ifdef DEBUG
+  // separating data with "\n" makes debugging the JSON output so much easier
+  #define JSON_LF "\n"
+#else
+  // normal, compact JSON output to reduce overhead
+  #define JSON_LF ""
+#endif
+
 #if 0
 void debugError(UInt32 id)
 {
@@ -38,8 +46,23 @@ void debugError(UInt32 id)
 }
 #endif
 
+void stripTrailingWhitespace(char* pString, UInt8 Size)
+{
+  for (UInt8 i=Size;i>0;i--)
+  {
+    if ((pString[i-1] != ' ')&&
+        (pString[i-1] != '\n')&&
+        (pString[i-1] != '\r')&&
+        (pString[i-1] != '\t'))
+    {
+      break;
+    }
+    pString[i-1] = 0;
+  }
+}
+
 static Hameg* s_pSingleton = NULL;
-    
+
 void Hameg::setup(HardwareSerial* pSerial)
 {
   if (!s_pSingleton)
@@ -245,8 +268,9 @@ const char* Hameg::getDeviceID()
     return NULL;
   if (!_hasPrefix("ID:"))
     return NULL;
-  
-  m_Buffer[3+27-2] = 0; // drop \r\n at the end of the ID
+
+  // drop \r\n and whitespace at the end of the ID
+  stripTrailingWhitespace(m_Buffer, 3+27);
   return &m_Buffer[3];
 }
 
@@ -257,17 +281,8 @@ const char* Hameg::getFrontControllerVersion()
   if (!_hasPrefix("VERS:"))
     return NULL;
 
-  UInt8 Size = 5+15;
-  // There is usually a \r\n at the end of the reported version.
-  // However, the protocol does not specify a line-ending (unlike for the "ID?" command),
-  // so these bytes are part of the returned payload - and we cannot be sure if all
-  // devices return a \r\n.
-  // => So we just add a check and cut it off, if found...
-  if (m_Buffer[Size-1] == '\n')
-    Size--;
-  if (m_Buffer[Size-1] == '\r')
-    Size--;
-  m_Buffer[Size] = 0; // drop \r\n at the end
+  // drop \r\n and whitespace at the end of the version
+  stripTrailingWhitespace(m_Buffer, 5+15);
   return &m_Buffer[5];
 }
 
@@ -485,16 +500,16 @@ std::string getChannelDDFData(UInt8 ChannelId, UInt8* pDDF, UInt16* pDDF1)
   
   char Buf[256];
   if (snprintf(Buf, sizeof(Buf),
-          "\"ch%hhu\": {\n"
-          "\"voltDiv\": \"%s\",\n"
-          "\"voltDiv_mV\": %u,\n"
-          "\"enabled\": %hhu,\n"
-          "\"inverted\": %hhu,\n"
-          "\"ac\": %hhu,\n"
-          "\"gnd\": %hhu,\n"
-          "\"probe\": \"1:%hhu\",\n"
-          "\"var\": %hhu,\n"
-          "\"yPosition\": %hi"
+          "\"ch%hhu\":{" JSON_LF
+          "\"voltDiv\":\"%s\"," JSON_LF
+          "\"voltDiv_mV\":%u," JSON_LF
+          "\"enabled\":%hhu," JSON_LF
+          "\"inverted\":%hhu," JSON_LF
+          "\"ac\":%hhu," JSON_LF
+          "\"gnd\":%hhu," JSON_LF
+          "\"probe\":\"1:%hhu\"," JSON_LF
+          "\"var\":%hhu," JSON_LF
+          "\"yPosition\":%hi"
           "}",
           ChannelId,
           VoltageStrings[VoltDiv],
@@ -514,7 +529,7 @@ std::string getChannelDDFData(UInt8 ChannelId, UInt8* pDDF, UInt16* pDDF1)
   return std::string(Buf);
 }
 
-std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus)
+bool triggerDDF2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, UInt8 Hold, std::string& json)
 {
   UInt8 b = pDDF[2];
   
@@ -603,29 +618,22 @@ std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus)
 
   char Buf[512];
   if (snprintf(Buf, sizeof(Buf),
-          "\"trigger\": {\n"
-          "\"status\": %hhu,\n"
-          "\"source\": \"%s\",\n"
-          "\"preTrigger\": \"%hhi%%\",\n"
-          "\"singleShot\": %hhu,\n"
-          "\"coupling\": \"%s\",\n"
-          "\"norm\": %hhu,\n"
-          "\"pp\": %hhu,\n"
-          "\"negative\": %hhu,\n"
-          "\"holdOff\": %hhu,\n"
-          "\"levelA\": %hu,\n"
-          "\"levelB\": %hu,\n"
-          "\"delayPosition\": %hi,\n"
-          "\"storeMode\": \"%s\"\n"
-          "},\n"
-
-          "\"add\": %hhu,\n"
-          "\"chop\": %hhu,\n"
-          "\"bwl\": %hhu,\n"
-          "\"tba\": %hhu,\n"
-          "\"tba_nS\": %llu,\n"
-          "\"zInput\": %hhu,\n"
-          "\"xPosition\": %hi"
+          "\"trigger\":{" JSON_LF
+          "\"status\":%hhu," JSON_LF
+          "\"source\":\"%s\"," JSON_LF
+          "\"preTrigger\":\"%hhi%%\"," JSON_LF
+          "\"singleShot\":%hhu," JSON_LF
+          "\"coupling\":\"%s\"," JSON_LF
+          "\"norm\":%hhu," JSON_LF
+          "\"pp\":%hhu," JSON_LF
+          "\"negative\":%hhu," JSON_LF
+          "\"holdOff\":%hhu," JSON_LF
+          "\"levelA\":%hu," JSON_LF
+          "\"levelB\":%hu," JSON_LF
+          "\"delayPosition\":%hi," JSON_LF
+          "\"storeMode\":\"%s\"," JSON_LF
+          "\"hold\":%hhu" JSON_LF
+          "}," JSON_LF
           ,
           TriggerStatus,
           pTriggerSrc,
@@ -640,7 +648,25 @@ std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus)
           TriggerLevelB,
           DelPos,
           pStoreMode,
-          
+          Hold
+          ) >= sizeof(Buf))
+  {
+    // string too long
+    return false;
+  }
+  json.append(Buf);
+
+  if (snprintf(Buf, sizeof(Buf),
+          "\"general\":{" JSON_LF
+          "\"add\":%hhu," JSON_LF
+          "\"chop\":%hhu," JSON_LF
+          "\"bwl\":%hhu," JSON_LF
+          "\"tba\":%hhu," JSON_LF
+          "\"tba_nS\":%llu," JSON_LF
+          "\"zInput\":%hhu," JSON_LF
+          "\"xPosition\":%hi" JSON_LF
+          "}"
+          ,
           Add,
           Chop,
           BWL,
@@ -651,18 +677,20 @@ std::string getTriggerDDF(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus)
           ) >= sizeof(Buf))
   {
     // string too long
-    Buf[0] = 0;
+    return false;
   }
-  return std::string(Buf);
+
+  json.append(Buf);
+  return true;
 }
 
-void ddf2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, std::string& json)
+bool ddf2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, UInt8 Hold, std::string& json)
 {
   json.append(getChannelDDFData(1, pDDF, pDDF1));
-  json.append(",\n");
+  json.append("," JSON_LF);
   json.append(getChannelDDFData(2, pDDF, pDDF1));
-  json.append(",\n");
-  json.append(getTriggerDDF(pDDF, pDDF1, TriggerStatus));
+  json.append("," JSON_LF);
+  return triggerDDF2json(pDDF, pDDF1, TriggerStatus, Hold, json);
 }
 
 bool Hameg::getJSONData(std::string& json)
@@ -677,17 +705,20 @@ bool Hameg::getJSONData(std::string& json)
     return false;
   if (!getTriggerStatus(&TriggerStatus))
     return false;
-  json = "{\n";
+  json = "{" JSON_LF;
 
   {
     char Buf[256];
     snprintf(Buf, sizeof(Buf),
-             "\"deviceId\": \"%s\",\n"
-             "\"FcVersion\": \"%s\",\n",
+             "\"id\":{" JSON_LF
+             "\"device\":\"%s\"," JSON_LF
+             "\"fc\":\"%s\"" JSON_LF
+             "}," JSON_LF,
              m_DeviceId.c_str(),
              m_FrontControllerVersion.c_str());
     json.append(Buf);
-    json.append("\"data\": {\n");
+
+    json.append("\"data\":{" JSON_LF);
 
     bool HaveData = false;
     if (DDF[0] & 0x10) // CH1 enabled?
@@ -699,7 +730,7 @@ bool Hameg::getJSONData(std::string& json)
     if (DDF[1] & 0x10) // CH2 enabled?
     {
       if (HaveData)
-        json.append(",\n");
+        json.append("," JSON_LF);
       getJsonWaveForm(2, json);
       HaveData = true;
     }
@@ -707,7 +738,7 @@ bool Hameg::getJSONData(std::string& json)
     if (DDF[7] & 0x40) // REF1 enabled?
     {
       if (HaveData)
-        json.append(",\n");
+        json.append("," JSON_LF);
       getReferenceWaveForm(1, json);
       HaveData = true;
     }
@@ -715,21 +746,18 @@ bool Hameg::getJSONData(std::string& json)
     if (DDF[7] & 0x80) // REF2 enabled?
     {
       if (HaveData)
-        json.append(",\n");
+        json.append("," JSON_LF);
       getReferenceWaveForm(2, json);
       HaveData = true;
     }
 
-    json.append("\n},\n");
+    json.append(JSON_LF "}," JSON_LF);
   }
 
-  ddf2json(DDF, DDF1, TriggerStatus, json);
+  UInt8 Hold = getHoldWaveForm();
+  bool Ok = ddf2json(DDF, DDF1, TriggerStatus, Hold, json);
 
-  json.append(",\n");
-  if (getHoldWaveForm())
-      json.append("\"hold\": 1");
-  else
-      json.append("\"hold\": 0");
+  json.append(JSON_LF "}" JSON_LF);
 
-  json.append("\n}\n");
+  return Ok;
 }

@@ -60,7 +60,9 @@ function toTimebaseStrNS(v)
 // custom callback for plotter x-axis labels
 function xAxisTicks(value, index, ticks)
 {
-	return toTimebaseStrNS(index*HamegSetting.tba_nS);
+	if (HamegSetting.general == undefined)
+		return ".";
+	return toTimebaseStrNS(index*HamegSetting.general.tba_nS);
 }
 
 var WideView=false;
@@ -341,7 +343,7 @@ function pushDataSet(ChartConfig, ChannelData, DataSet)
 {
 	if (ChannelData != null)
 	{
-		var TimebaseFactor = HamegSetting.tba_nS/XResolutionPerDiv*1e-9;
+		var TimebaseFactor = HamegSetting.general.tba_nS/XResolutionPerDiv*1e-9;
 		var YFactor = 1.0/YResolutionPerDiv;
 		for (var i = 0; (i < ChannelData.length)&&(i < 2000); ++i)
 		{
@@ -434,7 +436,7 @@ function guiCallback(element)
 	else
 	if (element.id == "time_div")
 	{
-		doRequest(["TBA", 0, "timeDiv", element.value, "single", HamegSetting.trigger.singleShot, "zInput", HamegSetting.zInput]);
+		doRequest(["TBA", 0, "timeDiv", element.value, "single", HamegSetting.trigger.singleShot, "zInput", HamegSetting.general.zInput]);
 	}
 	else
 	if (element.id == "autoset")
@@ -449,8 +451,8 @@ function guiCallback(element)
 	else
 	if (element.id == "hold")
 	{
-		HamegSetting.hold = 1-HamegSetting.hold;
-		doRequest(["HOLD", HamegSetting.hold]);
+		HamegSetting.trigger.hold = 1-HamegSetting.trigger.hold;
+		doRequest(["HOLD", HamegSetting.trigger.hold]);
 		updateGuiElements();
 	}
 	else
@@ -475,7 +477,7 @@ function guiCallback(element)
 			{
 				// need to enable or disable single shot mode first
 				HamegSetting.trigger.singleShot = (Value == "SGL") ? 1 : 0;
-				doRequest(["TBA", 0, "timeDiv", HamegSetting.tba, "single", HamegSetting.trigger.singleShot, "zInput", HamegSetting.zInput]);
+				doRequest(["TBA", 0, "timeDiv", HamegSetting.general.tba, "single", HamegSetting.trigger.singleShot, "zInput", HamegSetting.zInput]);
 			}
 			if (Value != "SGL")
 				doRequest(["STORE_MODE", 0, "mode", Mode, "preTrigger", HamegSetting.trigger.preTrigger, "ref1", Ref1, "ref2", Ref2]);
@@ -560,7 +562,7 @@ function updateGuiElements()
 
 	document.getElementById("trigger_edge").innerHTML = (HamegSetting.trigger.negative) ? "TRIG &darr;" : "TRIG &uarr;";
 
-	document.getElementById("hold").style.background = (HamegSetting.hold) ? "red" : "";
+	document.getElementById("hold").style.background = (HamegSetting.trigger.hold) ? "red" : "";
 
 	if (ConnectionError)
 	{
@@ -570,19 +572,19 @@ function updateGuiElements()
 	else
 	{
 		GuiCells.Hold.style.color = "magenta";
-		GuiCells.Hold.innerHTML = (HamegSetting.hold) ? "HOLD" : "";
+		GuiCells.Hold.innerHTML = (HamegSetting.trigger.hold) ? "HOLD" : "";
 	}
 
-	var Title = HamegSetting.deviceId.split(" ")[0];
+	var Title = HamegSetting.id.device.split(" ")[0];
 	document.title = Title;
 	GuiCells.DeviceID.innerHTML = "<center><font color=#88f><b>"+Title+"</b></font></center>";
-	
+
 	document.getElementById("trigger_coupling").value = HamegSetting.trigger.coupling;
 	document.getElementById("pre_trigger").value = HamegSetting.trigger.preTrigger;
 	document.getElementById("trigger_source").value = HamegSetting.trigger.source;
 
 	document.getElementById("store_mode").value = HamegSetting.trigger.storeMode;
-	document.getElementById("time_div").value = HamegSetting.tba;
+	document.getElementById("time_div").value = HamegSetting.general.tba;
 
 	// update details on channel 1+2
 	updateChInfo(1, HamegSetting.ch1);
