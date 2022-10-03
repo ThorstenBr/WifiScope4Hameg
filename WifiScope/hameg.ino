@@ -25,7 +25,7 @@
 
 extern void bin2HexStr(const char* pData, UInt32 Size, std::string& str);
 
-#ifdef DEBUG
+#ifdef DEBUG_JSON
   // separating data with "\n" makes debugging the JSON output so much easier
   #define JSON_LF "\n"
 #else
@@ -109,7 +109,7 @@ bool Hameg::connect()
   delay(10); // allow some time for baudrate detection
   _write(1, "\x0d");    // init/set baudrate
 
-  if (!_read(3, m_Buffer, 2000)) // read response
+  if (HAMEG_OK != _read(3, m_Buffer, 2000)) // read response
   {
     // init failed
     debugPrint("\nERROR: Init response timeout...\n");
@@ -189,7 +189,7 @@ void Hameg::_write(UInt32 ByteCount, const char* pData)
   }
 }
 
-bool Hameg::_read(UInt32 ByteCount, char* pBuffer, UInt32 TimeoutMs)
+int Hameg::_read(UInt32 ByteCount, char* pBuffer, UInt32 TimeoutMs)
 {
   if (pBuffer == NULL)
     pBuffer = m_Buffer;
@@ -200,23 +200,26 @@ bool Hameg::_read(UInt32 ByteCount, char* pBuffer, UInt32 TimeoutMs)
   m_BufferByteCount = r;
   if (r>0)
     m_ConnectionTimeout = millis();
-  return (r == ByteCount);
+  if (r == ByteCount)
+    return HAMEG_OK;
+  return HAMEG_REPLY_TIMEOUT;
 }
 
 int Hameg::_command(UInt32 WriteByteCount, const char* pData, UInt32 ReadByteCount, bool CheckStatusByte, char* pBuffer, UInt32 TimeoutMs)
 {
   _write(WriteByteCount, pData);
-  if (!_read(ReadByteCount, pBuffer, TimeoutMs))
-    return HAMEG_COMM_ERROR;
+  int Status = _read(ReadByteCount, pBuffer, TimeoutMs);
+  if (Status != HAMEG_OK)
+    return Status;
   if ((CheckStatusByte)&&(ReadByteCount == 3))
   {
     if (!pBuffer)
       pBuffer = m_Buffer;
     if ((pBuffer[0]>='0')and(pBuffer[0]<='9'))
       return pBuffer[0]-'0';
-    return -2;
+    return HAMEG_RESPONSE_CODE_ERROR;
   }
-  return 0;
+  return HAMEG_OK;
 }
 
 bool Hameg::_hasPrefix(const char* pPrefix, const char* pBuffer)
@@ -316,7 +319,7 @@ int Hameg::resetSingle()
 
 const char* Hameg::getDeviceID()
 {
-  if (0 != _command(3, "ID?", 3+27))
+  if (HAMEG_OK != _command(3, "ID?", 3+27))
     return NULL;
   if (!_hasPrefix("ID:"))
     return NULL;
@@ -328,7 +331,7 @@ const char* Hameg::getDeviceID()
 
 const char* Hameg::getFrontControllerVersion()
 {
-  if (0 != _command(5, "VERS?", 5+15))
+  if (HAMEG_OK != _command(5, "VERS?", 5+15))
     return NULL;
   if (!_hasPrefix("VERS:"))
     return NULL;
@@ -341,7 +344,7 @@ const char* Hameg::getFrontControllerVersion()
 // Hold Wave Form (signal capture is paused?)
 bool Hameg::getHoldWaveForm()
 {
-  if (0 != _command(7, "HLDWFM?", 7+1))
+  if (HAMEG_OK != _command(7, "HLDWFM?", 7+1))
     return false;
   if (!_hasPrefix("HLDWFM:"))
     return false;
@@ -367,7 +370,7 @@ UInt8* Hameg::getChannelWaveForm(UInt8 Channel)
       return NULL;
 
     Cmd[10] = '\x08';
-    if (0 != _command(11, Cmd, 7+2*2+2048, false, m_Buffer, 2000))
+    if (HAMEG_OK != _command(11, Cmd, 7+2*2+2048, false, m_Buffer, 2000))
       return NULL;
     if (!_hasPrefix(Cmd))
       return NULL;
@@ -448,7 +451,7 @@ bool Hameg::getCsvWaveForm(UInt8 Channel, std::string& csv)
 
 bool Hameg::readDDF(UInt8 pDDF[14])
 {
-  if (0 != _command(4, "DDF?", 4+14))
+  if (HAMEG_OK != _command(4, "DDF?", 4+14))
     return false;
   if (!_hasPrefix("DDF:"))
     return false;
@@ -458,7 +461,7 @@ bool Hameg::readDDF(UInt8 pDDF[14])
 
 bool Hameg::readDDF1(UInt16 pDDF1[8])
 {
-  if (0 != _command(5, "DDF1?", 5+16))
+  if (HAMEG_OK != _command(5, "DDF1?", 5+16))
     return false;
   if (!_hasPrefix("DDF1:"))
     return false;
@@ -468,7 +471,7 @@ bool Hameg::readDDF1(UInt16 pDDF1[8])
 
 bool Hameg::readRODDF(UInt16 pRODDF[5])
 {
-  if (0 != _command(6, "RODDF?", 6+10))
+  if (HAMEG_OK != _command(6, "RODDF?", 6+10))
     return false;
   if (!_hasPrefix("RODDF:"))
     return false;
@@ -478,7 +481,7 @@ bool Hameg::readRODDF(UInt16 pRODDF[5])
 
 bool Hameg::getTriggerStatus(UInt8* pTriggerStatus)
 {
-  if (0 != _command(7, "TRGSTA?", 7+1))
+  if (HAMEG_OK != _command(7, "TRGSTA?", 7+1))
     return false;
   if (!_hasPrefix("TRGSTA:"))
     return false;

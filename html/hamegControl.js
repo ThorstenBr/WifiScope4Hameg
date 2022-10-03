@@ -204,6 +204,7 @@ function addGuiElements(ScopeTable)
 	var TopRow    = ScopeTable.rows[0];
 	var MiddleRow = ScopeTable.rows[1];
 	var BottomRow = ScopeTable.rows[2];
+	var BottomRow2 = ScopeTable.insertRow(3);
 
 	GuiCells.DeviceID = TopRow.insertCell(0);
 	TopRow.insertCell(1);
@@ -249,6 +250,9 @@ function addGuiElements(ScopeTable)
 	var autoset = '<button type="button" id="autoset" onclick="guiCallback(this);" title=\"Automaticaly adapt oscilloscope settings to signals\">AUTOSET</button>'; 
 	GuiCells.AutoSet = BottomRow.insertCell(6);
 	GuiCells.AutoSet.innerHTML = "<br>"+autoset;
+
+	GuiCells.ErrorMessage = BottomRow2.insertCell(0);
+	GuiCells.ErrorMessage.colSpan = 5;
 }
 
 function updateData()
@@ -329,11 +333,13 @@ DynamicLoader.prototype.callback = function()
 		var TextData = this.Client.responseText;
 		this.Active = 0;
 		ConnectionError = (this.Client.status != 200);
+		var ErrorMessage = null;
 		if (ConnectionError)
 		{
+			ErrorMessage = TextData;
 			TextData = null;
 		}
-		processData(Charts[0], TextData);
+		processData(Charts[0], TextData, ErrorMessage);
 	}
 };
 
@@ -624,17 +630,6 @@ function updateGuiElements()
 
 	document.getElementById("hold").style.background = (HamegSetting.trigger.hold) ? "red" : "";
 
-	if (ConnectionError)
-	{
-		GuiCells.Hold.style.color = "red";
-		GuiCells.Hold.innerHTML = "NO CONNECTION";
-	}
-	else
-	{
-		GuiCells.Hold.style.color = "magenta";
-		GuiCells.Hold.innerHTML = (HamegSetting.trigger.hold) ? "HOLD" : "";
-	}
-
 	var Title = HamegSetting.id.device.split(" ")[0];
 	document.title = Title;
 	GuiCells.DeviceID.innerHTML = "<center><font color=#88f><b>"+Title+"</b></font></center>";
@@ -649,6 +644,9 @@ function updateGuiElements()
 
 	document.getElementById("store_mode").value = HamegSetting.trigger.storeMode;
 	document.getElementById("time_div").value = HamegSetting.general.tba;
+
+	GuiCells.Hold.style.color = "magenta";
+	GuiCells.Hold.innerHTML = (HamegSetting.trigger.hold) ? "HOLD" : "";
 
 	var opMode = (HamegSetting.general.chop) ? "CHOP" : "";
 	if (HamegSetting.general.add)
@@ -684,7 +682,7 @@ function updateGuiElements()
 	BlockGuiCallbacks = false;
 }
 
-function processData(ChartObj, Json)
+function processData(ChartObj, Json, ErrorMessage)
 {
 	ChartConfig = ChartObj.ChartConfig;
 	ChartConfig.data.datasets = [];
@@ -693,6 +691,15 @@ function processData(ChartObj, Json)
 	{
 		HamegSetting = JSON.parse(Json);
 	}
+
+	if (ErrorMessage != null)
+	{
+		GuiCells.Hold.style.color = "red";
+		GuiCells.Hold.innerHTML = "NO CONNECTION";
+		GuiCells.ErrorMessage.innerHTML = ErrorMessage;
+		return;
+	}
+
 	updateGuiElements();
 
 	if (Json == null)

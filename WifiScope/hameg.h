@@ -2,13 +2,22 @@
 #include "utypes.h"
 #include <string>
 
-// disable debug output
+// enable/disable debug output
 #define DEBUG 0
 
-// enable debug output
-//#define DEBUG 1
+// status code: ok
+#define HAMEG_OK                    0
 
-#define HAMEG_COMM_ERROR -1
+// general communication error
+#define HAMEG_COMM_ERROR           -1
+
+// error code when we're not receiving a reply with the expected number of
+// bytes within the given timeout
+#define HAMEG_REPLY_TIMEOUT       -10
+
+// error when we're receiving an invalid response code (not even a valid
+// error code)
+#define HAMEG_RESPONSE_CODE_ERROR -11
 
 class Hameg
 {
@@ -58,7 +67,7 @@ class Hameg
 
     bool _hasPrefix(const char* pPrefix, const char* pBuffer=NULL);
     void _write(UInt32 ByteCount, const char* pData);
-    bool _read(UInt32 ByteCount, char* pBuffer=NULL, UInt32 TimeoutMs=500);
+    int  _read(UInt32 ByteCount, char* pBuffer=NULL, UInt32 TimeoutMs=500);
     int  _command(UInt32 WriteByteCount, const char* pData, UInt32 ReadByteCount, bool CheckStatusByte=false, char* pBuffer=NULL, UInt32 TimeoutMs=500);
 
   private:
