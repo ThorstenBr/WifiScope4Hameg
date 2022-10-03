@@ -2,6 +2,12 @@
 #include "utypes.h"
 #include <string>
 
+// disable debug output
+#define DEBUG 0
+
+// enable debug output
+//#define DEBUG 1
+
 #define HAMEG_COMM_ERROR -1
 
 class Hameg
@@ -12,6 +18,7 @@ class Hameg
 
     bool connect();
     int  disconnect();
+    void check();
     
     const char* getDeviceID();
     const char* getFrontControllerVersion();
@@ -44,7 +51,7 @@ class Hameg
 
   protected:
     HardwareSerial* m_pSerial;
-    char m_Buffer[2048+20];
+    char   m_Buffer[2048+20];
     UInt32 m_BufferByteCount;
     String m_DeviceId;
     String m_FrontControllerVersion;
@@ -55,7 +62,9 @@ class Hameg
     int  _command(UInt32 WriteByteCount, const char* pData, UInt32 ReadByteCount, bool CheckStatusByte=false, char* pBuffer=NULL, UInt32 TimeoutMs=500);
 
   private:
-    bool m_Connected;
+    bool   m_Connected;
+    UInt32 m_ConnectionTimeout;
+
     Hameg(HardwareSerial* pSerial);
 };
 

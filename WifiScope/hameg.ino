@@ -19,6 +19,10 @@
 #include "hameg.h"
 #include "strings.h"
 
+// timeout after which the remote connection to the Hameg scope is
+// automatically dropped (so the user can make manual changes)
+#define HAMEG_REMOTE_MODE_TIMEOUT_MS 1000
+
 extern void bin2HexStr(const char* pData, UInt32 Size, std::string& str);
 
 #ifdef DEBUG
@@ -77,12 +81,17 @@ Hameg* Hameg::getSingleton()
 Hameg::Hameg(HardwareSerial* pSerial) :
  m_pSerial(pSerial),
  m_BufferByteCount(0),
- m_Connected(false)
+ m_Connected(false),
+ m_ConnectionTimeout(0)
 {
 }
 
 bool Hameg::connect()
 {
+  // check if we're still connected
+  if (m_Connected)
+    return true;
+
   // clear input buffer
   while (m_pSerial->available())
   {
@@ -128,7 +137,9 @@ bool Hameg::connect()
     m_FrontControllerVersion = getFrontControllerVersion();
   }
 
-  //debugPrint("Init OK...\n");
+  if (DEBUG)
+    debugPrint("Connected...\n");
+
   return true;
 }
 
@@ -137,9 +148,30 @@ int Hameg::disconnect()
   if (!m_Connected)
     return true;
   m_Connected = false;
-  return _command(5, "RM0\x0d\n", 3);
+  int Status = _command(5, "RM0\x0d\n", 3);
+
+  if (DEBUG)
+  {
+    DebugSerial.print("Disconnected... ");
+    DebugSerial.println(Status);
+  }
+
+  return Status;
 }
-    
+
+// automatically disconnec the scope after a timeout,
+// when the remote interface was not used (allowing the user to make manual changes)
+void Hameg::check()
+{
+  if (!m_Connected)
+    return;
+
+  // see if the remote interface hasn't been used for a while
+  UInt32 Millis = millis()-m_ConnectionTimeout;
+  if (Millis > HAMEG_REMOTE_MODE_TIMEOUT_MS)
+    disconnect();
+}
+
 void Hameg::_write(UInt32 ByteCount, const char* pData)
 {
   while (ByteCount>0)
@@ -166,6 +198,8 @@ bool Hameg::_read(UInt32 ByteCount, char* pBuffer, UInt32 TimeoutMs)
   if (r<=ByteCount)
     pBuffer[r] = 0;
   m_BufferByteCount = r;
+  if (r>0)
+    m_ConnectionTimeout = millis();
   return (r == ByteCount);
 }
 

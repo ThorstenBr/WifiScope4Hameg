@@ -203,12 +203,17 @@ void handle_Set()
       }
       else
       {
-        g_pHameg->disconnect();
         g_pWebServer->send(500, MimeTypePlain, "ERROR: Unknown parameter.");
         return;
       }
-      g_pHameg->disconnect();
     }
+  }
+
+  if (DEBUG)
+  {
+    DebugSerial.print(ParamName.c_str());
+    DebugSerial.print(", status=");
+    DebugSerial.println(Status);
   }
 
   if (Status != 0)
@@ -231,7 +236,8 @@ void handle_Csv()
   if (g_pHameg->connect())
   {
     Ok = g_pHameg->getCsvWaveForm(Channel, CsvData);
-    g_pHameg->disconnect();
+    if (!Ok)
+      g_pHameg->disconnect();
   }
   
   if (!Ok)
@@ -246,13 +252,13 @@ void handle_Data()
   if (g_pHameg->connect())
   {
     std::string json;
-    if (g_pHameg->getJSONData(json))
-    {
+    if (!g_pHameg->getJSONData(json))
       g_pHameg->disconnect();
+    else
+    {
       g_pWebServer->send(200, MimeTypeJSON, json.c_str());
       ok = true;
     }
-    g_pHameg->disconnect();
   }
 
   if (!ok)
@@ -264,44 +270,44 @@ void handle_Data()
 void handle_Debug()
 {
   int err = 0;
-  if (g_pHameg->connect())
+  if (!g_pHameg->connect())
+    err = -1;
+  else
   {
     std::string json;
     json.append("{\n");
 
     UInt8 DDF[14];
-    if (g_pHameg->readDDF(DDF))
+    if (!g_pHameg->readDDF(DDF))
+      err = -1;
+    else
     {
       json.append("\"ddf\": \"");
       bin2HexStr(DDF, sizeof(DDF), json);
       json.append("\",\n");
     }
-    else
-      err = true;
 
     UInt16 DDF1[8];
-    if (g_pHameg->readDDF1(DDF1))
+    if (!g_pHameg->readDDF1(DDF1))
+      err = -1;
+    else
     {
       json.append("\"ddf1\": \"");
       bin2HexStr((UInt8*) DDF1, sizeof(DDF1), json);
       json.append("\",\n");
     }
-    else
-      err = true;
 
     UInt16 RODDF[5];
-    if (g_pHameg->readRODDF(RODDF))
+    if (!g_pHameg->readRODDF(RODDF))
+      err = -1;
+    else
     {
       json.append("\"roddf\": \"");
       bin2HexStr((UInt8*)RODDF, sizeof(RODDF), json);
       json.append("\"\n");
     }
-    else
-      err = true;
 
     json.append("}");
-    
-    g_pHameg->disconnect();
 
     if (!err)
       g_pWebServer->send(200, MimeTypeJSON, json.c_str());
@@ -309,6 +315,7 @@ void handle_Debug()
 
   if (err != 0)
   {
+    g_pHameg->disconnect();
     handle_ComError(err);
   }
 }
@@ -360,4 +367,6 @@ void WebServer_loop()
 {
   if (g_pWebServer)
     g_pWebServer->handleClient();
+  if (g_pHameg)
+    g_pHameg->check();
 }
