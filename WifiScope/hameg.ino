@@ -621,6 +621,15 @@ bool triggerDDF2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, UInt8 Hold
   UInt8 TriggerSource = (AltTrigger) ? 0x4 : (b&0x3);
   const char* pTriggerSrc = TriggerSrcStrings[TriggerSource];
 
+  // HORMODE byte
+  b = pDDF[5];
+  UInt8 CT    = (b & 0x80) > 0;
+  UInt8 XY    = (b & 0x40) > 0;
+  UInt8 X10   = (b & 0x20) > 0;
+  UInt8 Store = (b & 0x10) > 0; // 1=Digital storage mode, 0=Analog mode
+  UInt8 PpDetect = (b & 0x08) > 0; // only Hameg1507
+  UInt8 TbMode = (b & 7);
+
   // TRIG byte
   b = pDDF[6];
   
@@ -708,7 +717,12 @@ bool triggerDDF2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, UInt8 Hold
           "\"tba\":%hhu," JSON_LF
           "\"tba_nS\":%llu," JSON_LF
           "\"zInput\":%hhu," JSON_LF
-          "\"xPosition\":%hi" JSON_LF
+          "\"xPosition\":%hi," JSON_LF
+          "\"ct\":%hhu," JSON_LF
+          "\"xy\":%hhu," JSON_LF
+          "\"x10\":%hhu," JSON_LF
+          "\"digitalStore\":%hhu," JSON_LF
+          "\"ppDetect\":%hhu" JSON_LF
           "}"
           ,
           Add,
@@ -717,7 +731,12 @@ bool triggerDDF2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, UInt8 Hold
           TBA,
           TBA_nS,
           ZInput,
-          XPos
+          XPos,
+          CT,
+          XY,
+          X10,
+          Store,
+          PpDetect
           ) >= sizeof(Buf))
   {
     // string too long
@@ -765,17 +784,21 @@ bool Hameg::getJSONData(std::string& json)
     json.append("\"data\":{" JSON_LF);
 
     bool HaveData = false;
-    if (DDF[0] & 0x10) // CH1 enabled?
+    UInt8 DigitalScopeMode = (DDF[5] & 0x10) > 0;
+
+    if ((DDF[0] & 0x10)&& // CH1 enabled?
+        (DigitalScopeMode))
     {
       getJsonWaveForm(1, json);
       HaveData = true;
     }
 
-    UInt8 Add  = (DDF[2] & 0x08)>0;
+    UInt8 Add  = (DDF[2] & 0x08) > 0;
 
     // CH2 enabled, but not ADD)?
     // (when channels are ADDed, then CH1 contains the valid sum)
     if ((DDF[1] & 0x10)&&
+        (DigitalScopeMode)&&
         (!Add))
     {
       if (HaveData)
