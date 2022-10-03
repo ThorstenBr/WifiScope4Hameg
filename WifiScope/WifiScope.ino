@@ -181,7 +181,7 @@ void setup()
   Serial.swap();
 
   // briefly wait after swapping UART pins
-  delay(3000);
+  delay(1000);
   digitalWrite(BUILTIN_LED, HIGH);
 
   // enable software serial for debug output on default TX/RX pins

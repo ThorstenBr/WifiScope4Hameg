@@ -230,6 +230,8 @@
     "var YResolutionPerDiv = 25;\n" \
     "var ConnectionError = false;\n" \
     "var HamegSetting = {};\n" \
+    "var UpdateRunning = false;\n" \
+    "var UpdateInterval = 500;\n" \
     "function timeNow()\n" \
     "{\n" \
     "return Math.round(((new Date()).getTime())/1000);\n" \
@@ -407,6 +409,18 @@
     "\"<option value=\\\"REF2\\\">REF2</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
+    "function getUpdateSelector()\n" \
+    "{\n" \
+    "return (\"<select id=\\\"update\\\" title=\\\"Select browser update interval\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
+    "\"<option value=\\\"UPDATE\\\">UPDATE</option>\"+\n" \
+    "\"<option value=\\\"500\\\">500ms</option>\"+\n" \
+    "\"<option value=\\\"2000\\\">2s</option>\"+\n" \
+    "\"<option value=\\\"5000\\\">5s</option>\"+\n" \
+    "\"<option value=\\\"10000\\\">10s</option>\"+\n" \
+    "\"<option value=\\\"20000\\\">20s</option>\"+\n" \
+    "\"<option value=\\\"OFF\\\">OFF</option>\"+\n" \
+    "\"</select>\");\n" \
+    "}\n" \
     "function addGuiElements(ScopeTable)\n" \
     "{\n" \
     "var TopRow    = ScopeTable.rows[0];\n" \
@@ -426,7 +440,7 @@
     "var wide = \"<button id=\\\"wide\\\" onclick=\\\"toggleWideView();\\\" title=\\\"Toggle wide display\\\">&#10231;</button>\";\n" \
     "var reset_single = '<button type=\"button\" id=\"reset_single\" onclick=\"guiCallback(this);\" title=\"Reset trigger (in single mode only)\">RES</button>';\n" \
     "var trigger_edge = '<button type=\"button\" id=\"trigger_edge\" onclick=\"guiCallback(this);\" title=\"Trigger on rising or falling edge\">TRIG &uarr;</button>';\n" \
-    "var update = '<button type=\"button\" id=\"update\" onclick=\"updateData();\" title=\\\"Refresh display\\\">UPDATE</button>';\n" \
+    "var update = getUpdateSelector();//'<button type=\"button\" id=\"update\" onclick=\"guiCallback(this);\" title=\\\"Refresh display\\\">UPDATE</button>';\n" \
     "var ref = getReferenceSelector();\n" \
     "var hold = '<button type=\"button\" id=\"hold\" onclick=\"guiCallback({\\'id\\':\\'hold\\', \\'value\\':\\'0\\'});\" title=\\\"Hold scope measurement data (remote)\\\">HOLD</button>';\n" \
     "updateHtml(GuiCells.ButtonsRight, (trigger_edge+\"<br>\"+getTriggerModeSelector()+\"<br>\"+getPreTriggerSelector()+\"<br>\"+\n" \
@@ -452,6 +466,7 @@
     "}\n" \
     "function updateData()\n" \
     "{\n" \
+    "document.getElementById(\"update\").style.background = \"green\";\n" \
     "for (var i=0;i<FileLoaders.length;i++)\n" \
     "{\n" \
     "FileLoaders[i].load();\n" \
@@ -596,6 +611,29 @@
     "{\n" \
     "if (BlockGuiCallbacks)\n" \
     "return;\n" \
+    "if (element.id == \"update\")\n" \
+    "{\n" \
+    "console.log(\"update\", element.value);\n" \
+    "if (element.value == \"UPDATE\")\n" \
+    "{\n" \
+    "}\n" \
+    "else\n" \
+    "if (element.value == \"OFF\")\n" \
+    "{\n" \
+    "UpdateRunning = false;\n" \
+    "stopTimer();\n" \
+    "}\n" \
+    "else\n" \
+    "{\n" \
+    "stopTimer();\n" \
+    "UpdateRunning = true;\n" \
+    "UpdateInterval = parseInt(element.value, 10);\n" \
+    "}\n" \
+    "element.value = \"UPDATE\";\n" \
+    "updateGuiElements();\n" \
+    "if (UpdateRunning) startTimer();else stopTimer();\n" \
+    "}\n" \
+    "else\n" \
     "if ((element.id == \"ch1VoltDiv\")||\n" \
     "(element.id == \"ch2VoltDiv\"))\n" \
     "{\n" \
@@ -808,8 +846,9 @@
     "function updateGuiElements()\n" \
     "{\n" \
     "BlockGuiCallbacks = true;\n" \
-    "updateValue(document.getElementById(\"trigger_edge\"), (HamegSetting.trigger.negative) ? \"TRIG &darr;\" : \"TRIG &uarr;\");\n" \
+    "updateHtml(document.getElementById(\"trigger_edge\"), (HamegSetting.trigger.negative) ? \"TRIG &darr;\" : \"TRIG &uarr;\");\n" \
     "document.getElementById(\"hold\").style.background = (HamegSetting.trigger.hold) ? \"red\" : \"\";\n" \
+    "document.getElementById(\"update\").style.background = \"\";//(UpdateRunning) ? \"green\" : \"\";\n" \
     "var Title = HamegSetting.id.device.split(\" \")[0];\n" \
     "document.title = Title;\n" \
     "updateHtml(GuiCells.DeviceID, \"<center><font color=#88f><b>\"+Title+\"</b><br><font size='2'>WiFiScope4Hameg</font></font></center>\");\n" \
@@ -971,6 +1010,37 @@
     "return ChannelName+\": \"+(label/1000.0).toFixed(3)+\" V\";\n" \
     "return ChannelName+\": \"+label.toFixed(2)+\" mV\";\n" \
     "}\n" \
+    "function updateTimer()\n" \
+    "{\n" \
+    "updateData();\n" \
+    "}\n" \
+    "var Timer = null;\n" \
+    "function startTimer()\n" \
+    "{\n" \
+    "UpdateRunning = true;\n" \
+    "if (Timer == null)\n" \
+    "{\n" \
+    "Timer = setInterval(updateTimer, UpdateInterval);\n" \
+    "}\n" \
+    "}\n" \
+    "function stopTimer()\n" \
+    "{\n" \
+    "if (Timer != null)\n" \
+    "{\n" \
+    "clearInterval(Timer);\n" \
+    "Timer = null;\n" \
+    "}\n" \
+    "}\n" \
+    "function initTimer()\n" \
+    "{\n" \
+    "document.addEventListener(\"visibilitychange\", function() {\n" \
+    "if (document.hidden) stopTimer(); else\n" \
+    "if (UpdateRunning) startTimer();\n" \
+    "});\n" \
+    "if (UpdateRunning)\n" \
+    "startTimer();\n" \
+    "}\n" \
+    "initTimer();\n" \
 
 /*******************************************************
  * GENERATED FILE

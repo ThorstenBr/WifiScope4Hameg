@@ -29,6 +29,9 @@ var YResolutionPerDiv = 25;
 var ConnectionError = false;
 var HamegSetting = {};
 
+var UpdateRunning = false;
+var UpdateInterval = 500;
+
 function timeNow()
 {
 	return Math.round(((new Date()).getTime())/1000);
@@ -227,6 +230,19 @@ function getReferenceSelector()
 		"</select>");
 }
 
+function getUpdateSelector()
+{
+	return ("<select id=\"update\" title=\"Select browser update interval\" onchange=\"guiCallback(this)\">"+
+		"<option value=\"UPDATE\">UPDATE</option>"+
+		"<option value=\"500\">500ms</option>"+
+		"<option value=\"2000\">2s</option>"+
+		"<option value=\"5000\">5s</option>"+
+		"<option value=\"10000\">10s</option>"+
+		"<option value=\"20000\">20s</option>"+
+		"<option value=\"OFF\">OFF</option>"+
+		"</select>");
+}
+
 function addGuiElements(ScopeTable)
 {
 	var TopRow    = ScopeTable.rows[0];
@@ -252,7 +268,7 @@ function addGuiElements(ScopeTable)
 	var reset_single = '<button type="button" id="reset_single" onclick="guiCallback(this);" title="Reset trigger (in single mode only)">RES</button>';
 	var trigger_edge = '<button type="button" id="trigger_edge" onclick="guiCallback(this);" title="Trigger on rising or falling edge">TRIG &uarr;</button>';
 
-	var update = '<button type="button" id="update" onclick="updateData();" title=\"Refresh display\">UPDATE</button>';
+	var update = getUpdateSelector();//'<button type="button" id="update" onclick="guiCallback(this);" title=\"Refresh display\">UPDATE</button>';
 	var ref = getReferenceSelector();
 	var hold = '<button type="button" id="hold" onclick="guiCallback({\'id\':\'hold\', \'value\':\'0\'});" title=\"Hold scope measurement data (remote)\">HOLD</button>';
 
@@ -284,6 +300,7 @@ function addGuiElements(ScopeTable)
 
 function updateData()
 {
+	document.getElementById("update").style.background = "green";
 	for (var i=0;i<FileLoaders.length;i++)
 	{
 		FileLoaders[i].load();
@@ -449,6 +466,31 @@ function guiCallback(element)
 	if (BlockGuiCallbacks)
 		return;
 
+	if (element.id == "update")
+	{
+		console.log("update", element.value);
+		if (element.value == "UPDATE")
+		{
+		}
+		else
+		if (element.value == "OFF")
+		{
+			UpdateRunning = false;
+			stopTimer();
+		}
+		else
+		{
+			stopTimer();
+			UpdateRunning = true;
+			UpdateInterval = parseInt(element.value, 10);
+		}
+		element.value = "UPDATE";
+		// UPDATE toggle button
+		//UpdateRunning = !UpdateRunning;
+		updateGuiElements();
+		if (UpdateRunning) startTimer();else stopTimer();
+	}
+	else
 	if ((element.id == "ch1VoltDiv")||
 	    (element.id == "ch2VoltDiv"))
 	{
@@ -675,9 +717,10 @@ function updateGuiElements()
 {
 	BlockGuiCallbacks = true;
 
-	updateValue(document.getElementById("trigger_edge"), (HamegSetting.trigger.negative) ? "TRIG &darr;" : "TRIG &uarr;");
+	updateHtml(document.getElementById("trigger_edge"), (HamegSetting.trigger.negative) ? "TRIG &darr;" : "TRIG &uarr;");
 
 	document.getElementById("hold").style.background = (HamegSetting.trigger.hold) ? "red" : "";
+	document.getElementById("update").style.background = "";//(UpdateRunning) ? "green" : "";
 
 	var Title = HamegSetting.id.device.split(" ")[0];
 	document.title = Title;
@@ -873,3 +916,38 @@ function toolTipFunc(tooltipItem, data)
 	return ChannelName+": "+label.toFixed(2)+" mV";
 }
 
+function updateTimer()
+{
+	updateData();
+}
+
+var Timer = null;
+function startTimer()
+{
+	UpdateRunning = true;
+	if (Timer == null)
+	{
+		Timer = setInterval(updateTimer, UpdateInterval);
+	}
+}
+
+function stopTimer()
+{
+	if (Timer != null)
+	{
+		clearInterval(Timer);
+		Timer = null;
+	}
+}
+
+function initTimer()
+{
+	document.addEventListener("visibilitychange", function() {
+		if (document.hidden) stopTimer(); else
+		if (UpdateRunning) startTimer();
+	});
+	if (UpdateRunning)
+		startTimer();
+}
+
+initTimer();
