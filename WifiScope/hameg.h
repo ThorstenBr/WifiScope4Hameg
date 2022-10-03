@@ -49,6 +49,7 @@ class Hameg
     UInt8* getReferenceWaveForm(UInt8 RefChannel);
     bool getReferenceWaveForm(UInt8 Channel, std::string& json);
 
+    int  setErrorDisplay(UInt8 ReadoutEnabled);
     int  setCH(UInt8 Channel, UInt8 VoltDiv, UInt8 Enabled, UInt8 AC, UInt8 Inverted, UInt8 GND);
     int  setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZInput);
     int  setStoreMode(UInt8 Mode, UInt8 PreTrigger, UInt8 Ref1, UInt8 Ref2);

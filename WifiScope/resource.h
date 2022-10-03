@@ -321,10 +321,10 @@
     "{\n" \
     "return (\"<select id=\\\"store_mode\\\" title=\\\"Select storage mode\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
     "\"<option value=\\\"RFR\\\">RFR</option>\"+\n" \
-    "\"<option value=\\\"SGL\\\">SGL</option>\"+\n" \
-    "\"<option value=\\\"ROL\\\">ROL</option>\"+\n" \
-    "\"<option value=\\\"ENV\\\">ENV</option>\"+\n" \
-    "\"<option value=\\\"AVR\\\">AVR</option>\"+\n" \
+    "\"<option value=\\\"SGL\\\">SINGLE</option>\"+\n" \
+    "\"<option value=\\\"ROL\\\">ROLLING</option>\"+\n" \
+    "\"<option value=\\\"ENV\\\">ENVELP</option>\"+\n" \
+    "\"<option value=\\\"AVR\\\">AVERAGE</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
     "function getOpModeSelector()\n" \
@@ -389,6 +389,7 @@
     "var TopRow    = ScopeTable.rows[0];\n" \
     "var MiddleRow = ScopeTable.rows[1];\n" \
     "var BottomRow = ScopeTable.rows[2];\n" \
+    "var BottomRow2 = ScopeTable.insertRow(3);\n" \
     "GuiCells.DeviceID = TopRow.insertCell(0);\n" \
     "TopRow.insertCell(1);\n" \
     "GuiCells.Note = TopRow.insertCell(2);\n" \
@@ -422,6 +423,8 @@
     "var autoset = '<button type=\"button\" id=\"autoset\" onclick=\"guiCallback(this);\" title=\\\"Automaticaly adapt oscilloscope settings to signals\\\">AUTOSET</button>';\n" \
     "GuiCells.AutoSet = BottomRow.insertCell(6);\n" \
     "GuiCells.AutoSet.innerHTML = \"<br>\"+autoset;\n" \
+    "GuiCells.ErrorMessage = BottomRow2.insertCell(0);\n" \
+    "GuiCells.ErrorMessage.colSpan = 5;\n" \
     "}\n" \
     "function updateData()\n" \
     "{\n" \
@@ -490,11 +493,13 @@
     "var TextData = this.Client.responseText;\n" \
     "this.Active = 0;\n" \
     "ConnectionError = (this.Client.status != 200);\n" \
+    "var ErrorMessage = null;\n" \
     "if (ConnectionError)\n" \
     "{\n" \
+    "ErrorMessage = TextData;\n" \
     "TextData = null;\n" \
     "}\n" \
-    "processData(Charts[0], TextData);\n" \
+    "processData(Charts[0], TextData, ErrorMessage);\n" \
     "}\n" \
     "};\n" \
     "DynamicLoader.prototype.load = function(cb)\n" \
@@ -761,16 +766,6 @@
     "BlockGuiCallbacks = true;\n" \
     "document.getElementById(\"trigger_edge\").innerHTML = (HamegSetting.trigger.negative) ? \"TRIG &darr;\" : \"TRIG &uarr;\";\n" \
     "document.getElementById(\"hold\").style.background = (HamegSetting.trigger.hold) ? \"red\" : \"\";\n" \
-    "if (ConnectionError)\n" \
-    "{\n" \
-    "GuiCells.Hold.style.color = \"red\";\n" \
-    "GuiCells.Hold.innerHTML = \"NO CONNECTION\";\n" \
-    "}\n" \
-    "else\n" \
-    "{\n" \
-    "GuiCells.Hold.style.color = \"magenta\";\n" \
-    "GuiCells.Hold.innerHTML = (HamegSetting.trigger.hold) ? \"HOLD\" : \"\";\n" \
-    "}\n" \
     "var Title = HamegSetting.id.device.split(\" \")[0];\n" \
     "document.title = Title;\n" \
     "GuiCells.DeviceID.innerHTML = \"<center><font color=#88f><b>\"+Title+\"</b></font></center>\";\n" \
@@ -782,6 +777,8 @@
     "document.getElementById(\"trigger_source\").value = HamegSetting.trigger.source;\n" \
     "document.getElementById(\"store_mode\").value = HamegSetting.trigger.storeMode;\n" \
     "document.getElementById(\"time_div\").value = HamegSetting.general.tba;\n" \
+    "GuiCells.Hold.style.color = \"magenta\";\n" \
+    "GuiCells.Hold.innerHTML = (HamegSetting.trigger.hold) ? \"HOLD\" : \"\";\n" \
     "var opMode = (HamegSetting.general.chop) ? \"CHOP\" : \"\";\n" \
     "if (HamegSetting.general.add)\n" \
     "opMode = \"ADD\";\n" \
@@ -810,13 +807,20 @@
     "}\n" \
     "BlockGuiCallbacks = false;\n" \
     "}\n" \
-    "function processData(ChartObj, Json)\n" \
+    "function processData(ChartObj, Json, ErrorMessage)\n" \
     "{\n" \
     "ChartConfig = ChartObj.ChartConfig;\n" \
     "ChartConfig.data.datasets = [];\n" \
     "if (Json != null)\n" \
     "{\n" \
     "HamegSetting = JSON.parse(Json);\n" \
+    "}\n" \
+    "if (ErrorMessage != null)\n" \
+    "{\n" \
+    "GuiCells.Hold.style.color = \"red\";\n" \
+    "GuiCells.Hold.innerHTML = \"NO CONNECTION\";\n" \
+    "GuiCells.ErrorMessage.innerHTML = ErrorMessage;\n" \
+    "return;\n" \
     "}\n" \
     "updateGuiElements();\n" \
     "if (Json == null)\n" \

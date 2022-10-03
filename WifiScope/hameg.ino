@@ -128,6 +128,10 @@ bool Hameg::connect()
     return false;
   }
 
+  // disable display of error messages on the screen (causes issues with the protocol,
+  // due to the long display timeouts)
+  setErrorDisplay(0);
+
   if (m_DeviceId.length() == 0)
   {
     m_DeviceId = getDeviceID();
@@ -230,6 +234,15 @@ bool Hameg::_hasPrefix(const char* pPrefix, const char* pBuffer)
   return (strncmp(pPrefix, pBuffer, l)==0);
 }
 
+// ReadoutEnabled=0: error messages are only sent to the RS232 connection
+// ReadoutEnabled=1: error messages are also displayed on the scope
+int Hameg::setErrorDisplay(UInt8 ReadoutEnabled)
+{
+  char Buf[10];
+  sprintf(Buf, "ERRMSGE=%hhu", (ReadoutEnabled) ? 1 : 0);
+  return _command(9, Buf, 3, true);
+}
+
 int Hameg::setCH(UInt8 Channel, UInt8 VoltDiv, UInt8 Enabled, UInt8 AC, UInt8 Inverted, UInt8 GND)
 {
   char Buf[6];
@@ -314,7 +327,16 @@ int Hameg::autoset()
 
 int Hameg::resetSingle()
 {
-  return _command(5, "RES\x0d\n", 3, true);
+  int Status = _command(5, "RES\x0d\n", 3, true, NULL, 4000);
+  if (Status == HAMEG_OK)
+  {
+    // workaround: prevent scope from locking up
+    // commands sent immediately after a "RES" command are somehow locking up the
+    // scope's trigger logic (won't trigger any longer). A brief delay fixes the issue...
+    // The delay prevents further commands from being sent for a few milliseconds.
+    delay(100);
+  }
+  return Status;
 }
 
 const char* Hameg::getDeviceID()
