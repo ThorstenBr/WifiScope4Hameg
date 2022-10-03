@@ -83,9 +83,11 @@ void bin2HexStr(const UInt8* pData, UInt32 Size, std::string& str)
 /* webserver content handlers                                          */
 /***********************************************************************/
 
-void handle_ComError()
+void handle_ComError(int ErrorCode)
 {
-  g_pWebServer->send(500, MimeTypePlain, "ERROR: Unable to communicate with HAMEG scope.");
+  char Message[80];
+  snprintf(Message, sizeof(Message), "ERROR: Unable to communicate with HAMEG scope (%i).", ErrorCode);
+  g_pWebServer->send(500, MimeTypePlain, Message);
 }
 
 // main index page (scope)
@@ -113,7 +115,7 @@ void handle_Set()
   const String ValueStr  = g_pWebServer->arg(0);
   Int32 Value            = atoi(ValueStr.c_str());
 
-  bool Ok = false;
+  int Status = -3;
 
   if (ParamName != "")
   {
@@ -127,7 +129,7 @@ void handle_Set()
         UInt8 GND         = getParameterInt("gnd", 0);
         UInt8 Inverted    = getParameterInt("inverted", 0);
         UInt8 VoltDiv     = mapString(VoltDivStr, VoltageStrings);
-        Ok = g_pHameg->setCH(Value, VoltDiv, Enabled, AC, Inverted, GND);
+        Status = g_pHameg->setCH(Value, VoltDiv, Enabled, AC, Inverted, GND);
       }
       else
       if (ParamName == "TBA")
@@ -135,7 +137,7 @@ void handle_Set()
         UInt8 TimeDiv = getParameterInt("timeDiv", 3);
         UInt8 Single  = getParameterInt("single", 0);
         UInt8 ZInput  = getParameterInt("zInput", 0);
-        Ok = g_pHameg->setTBA(TimeDiv, Single, ZInput);
+        Status = g_pHameg->setTBA(TimeDiv, Single, ZInput);
       }
       else
       if (ParamName == "STORE_MODE")
@@ -148,7 +150,7 @@ void handle_Set()
         UInt8 StoreMode  = mapString(ModeStr, StoreModeStrings);
         UInt8 PreTrigger = mapString(PreTrigStr, PreTriggerStrings, 3);
 
-        Ok = g_pHameg->setStoreMode(StoreMode, PreTrigger, Ref1, Ref2);
+        Status = g_pHameg->setStoreMode(StoreMode, PreTrigger, Ref1, Ref2);
       }
       else
       if (ParamName == "VERTICAL_MODE")
@@ -170,7 +172,7 @@ void handle_Set()
         UInt8 Chop         = getParameterInt("chop", 0);
         UInt8 Bwl          = getParameterInt("bwl", 0);
 
-        Ok = g_pHameg->setVerticalMode(AltTrigger, Ch1_10_1, Ch2_10_1, Bwl, Chop, Add, TriggerSource);
+        Status = g_pHameg->setVerticalMode(AltTrigger, Ch1_10_1, Ch2_10_1, Bwl, Chop, Add, TriggerSource);
       }
       else
       if (ParamName == "TRIGGER")
@@ -182,22 +184,22 @@ void handle_Set()
 
         UInt8 Coupling     = mapString(CouplingStr, CouplingStrings, 1);
 
-        Ok = g_pHameg->setTrigger(FallingEdge, PeakPeak, Norm, Coupling);
+        Status = g_pHameg->setTrigger(FallingEdge, PeakPeak, Norm, Coupling);
       }
       else
       if (ParamName == "AUTOSET")
       {
-        Ok = g_pHameg->autoSet();
+        Status = g_pHameg->autoset();
       }
       else
       if (ParamName == "RESET_SINGLE")
       {
-        Ok = g_pHameg->resetSingle();
+        Status = g_pHameg->resetSingle();
       }
       else
       if (ParamName == "HOLD")
       {
-        Ok = g_pHameg->setHoldWaveForm(Value);
+        Status = g_pHameg->setHoldWaveForm(Value);
       }
       else
       {
@@ -208,9 +210,13 @@ void handle_Set()
       g_pHameg->disconnect();
     }
   }
-    
-  if (!Ok)
-    g_pWebServer->send(500, MimeTypePlain, "ERROR");
+
+  if (Status != 0)
+  {
+    char ErrorMessage[40];
+    snprintf(ErrorMessage, sizeof(ErrorMessage), "ERROR: %i\n", Status);
+    g_pWebServer->send(500, MimeTypePlain, ErrorMessage);
+  }
   else
     g_pWebServer->send(200, MimeTypePlain, "OK");
 }
@@ -251,13 +257,13 @@ void handle_Data()
 
   if (!ok)
   {
-    handle_ComError();
+    handle_ComError(-1);
   }
 }
 
 void handle_Debug()
 {
-  bool err = false;
+  int err = 0;
   if (g_pHameg->connect())
   {
     std::string json;
@@ -301,9 +307,9 @@ void handle_Debug()
       g_pWebServer->send(200, MimeTypeJSON, json.c_str());
   }
 
-  if (err)
+  if (err != 0)
   {
-    handle_ComError();
+    handle_ComError(err);
   }
 }
   

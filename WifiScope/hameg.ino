@@ -132,13 +132,12 @@ bool Hameg::connect()
   return true;
 }
 
-bool Hameg::disconnect()
+int Hameg::disconnect()
 {
   if (!m_Connected)
     return true;
   m_Connected = false;
-  bool ok = _command(5, "RM0\x0d\n", 3);
-  return ok;
+  return _command(5, "RM0\x0d\n", 3);
 }
     
 void Hameg::_write(UInt32 ByteCount, const char* pData)
@@ -170,10 +169,20 @@ bool Hameg::_read(UInt32 ByteCount, char* pBuffer, UInt32 TimeoutMs)
   return (r == ByteCount);
 }
 
-bool Hameg::_command(UInt32 WriteByteCount, const char* pData, UInt32 ReadByteCount, char* pBuffer, UInt32 TimeoutMs)
+int Hameg::_command(UInt32 WriteByteCount, const char* pData, UInt32 ReadByteCount, bool CheckStatusByte, char* pBuffer, UInt32 TimeoutMs)
 {
   _write(WriteByteCount, pData);
-  return _read(ReadByteCount, pBuffer, TimeoutMs);
+  if (!_read(ReadByteCount, pBuffer, TimeoutMs))
+    return HAMEG_COMM_ERROR;
+  if ((CheckStatusByte)&&(ReadByteCount == 3))
+  {
+    if (!pBuffer)
+      pBuffer = m_Buffer;
+    if ((pBuffer[0]>='0')and(pBuffer[0]<='9'))
+      return pBuffer[0]-'0';
+    return -2;
+  }
+  return 0;
 }
 
 bool Hameg::_hasPrefix(const char* pPrefix, const char* pBuffer)
@@ -184,7 +193,7 @@ bool Hameg::_hasPrefix(const char* pPrefix, const char* pBuffer)
   return (strncmp(pPrefix, pBuffer, l)==0);
 }
 
-bool Hameg::setCH(UInt8 Channel, UInt8 VoltDiv, UInt8 Enabled, UInt8 AC, UInt8 Inverted, UInt8 GND)
+int Hameg::setCH(UInt8 Channel, UInt8 VoltDiv, UInt8 Enabled, UInt8 AC, UInt8 Inverted, UInt8 GND)
 {
   char Buf[6];
   sprintf(Buf, "CH%hhu=X", Channel);
@@ -197,12 +206,10 @@ bool Hameg::setCH(UInt8 Channel, UInt8 VoltDiv, UInt8 Enabled, UInt8 AC, UInt8 I
   if (GND)
     GND = 0x80;
   Buf[4] = VoltDiv|Enabled|Inverted|AC|GND;
-  if (!_command(5, Buf, 3))
-    return false;
-  return true;
+  return _command(5, Buf, 3, true);
 }
 
-bool Hameg::setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZInput)
+int Hameg::setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZInput)
 {
   char Buf[6];
   sprintf(Buf, "TBA=X");
@@ -211,12 +218,10 @@ bool Hameg::setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZInput)
   if (ZInput)
     ZInput = 0x80;
   Buf[4] = TimeDiv|Single|ZInput;
-  if (!_command(5, Buf, 3))
-    return false;
-  return true;
+  return _command(5, Buf, 3, true);
 }
 
-bool Hameg::setStoreMode(UInt8 Mode, UInt8 PreTrigger, UInt8 Ref1, UInt8 Ref2)
+int Hameg::setStoreMode(UInt8 Mode, UInt8 PreTrigger, UInt8 Ref1, UInt8 Ref2)
 {
   char Buf[10];
   sprintf(Buf, "STRMODE=X");
@@ -226,12 +231,10 @@ bool Hameg::setStoreMode(UInt8 Mode, UInt8 PreTrigger, UInt8 Ref1, UInt8 Ref2)
     Ref2 = 0x80;
   PreTrigger = (PreTrigger & 7) << 3;
   Buf[8] = Mode|PreTrigger|Ref1|Ref2;
-  if (!_command(9, Buf, 3, NULL, 1000))
-    return false;
-  return true;
+  return _command(9, Buf, 3, true, NULL, 1000);
 }
 
-bool Hameg::setTrigger(UInt8 FallingEdge, UInt8 PeakPeak, UInt8 Norm, UInt8 Coupling)
+int Hameg::setTrigger(UInt8 FallingEdge, UInt8 PeakPeak, UInt8 Norm, UInt8 Coupling)
 {
   char Buf[7];
   sprintf(Buf, "TRIG=X");
@@ -243,12 +246,10 @@ bool Hameg::setTrigger(UInt8 FallingEdge, UInt8 PeakPeak, UInt8 Norm, UInt8 Coup
     Norm = 0x10;
   Coupling &= 0x7;
   Buf[5] = FallingEdge|PeakPeak|Norm|Coupling;
-  if (!_command(6, Buf, 3, NULL, 1000))
-    return false;
-  return true;
+  return _command(6, Buf, 3, true, NULL, 1000);
 }
 
-bool Hameg::setVerticalMode(UInt8 AltTrigger, UInt8 Ch1_10_1, UInt8 Ch2_10_1, UInt8 Bwl, UInt8 Chop, UInt8 Add, UInt8 TriggerSource)
+int Hameg::setVerticalMode(UInt8 AltTrigger, UInt8 Ch1_10_1, UInt8 Ch2_10_1, UInt8 Bwl, UInt8 Chop, UInt8 Add, UInt8 TriggerSource)
 {
   char Buf[10];
   sprintf(Buf, "VERMODE=X");
@@ -266,28 +267,22 @@ bool Hameg::setVerticalMode(UInt8 AltTrigger, UInt8 Ch1_10_1, UInt8 Ch2_10_1, UI
     Add = 0x08;
   TriggerSource &= 3;
   Buf[8] = AltTrigger | Ch1_10_1 | Ch2_10_1 | Bwl | Chop | Add | TriggerSource;
-  if (!_command(9, Buf, 3, NULL, 1000))
-    return false;
-  return true;
+  return _command(9, Buf, 3, true, NULL, 1000);
 }
 
-bool Hameg::autoSet()
+int Hameg::autoset()
 {
-  if (!_command(9, "AUTOSET\x0d\n", 3, NULL, 4000))
-    return false;
-  return true;
+  return _command(9, "AUTOSET\x0d\n", 3, true, NULL, 4000);
 }
 
-bool Hameg::resetSingle()
+int Hameg::resetSingle()
 {
-  if (!_command(5, "RES\x0d\n", 3))
-    return false;
-  return true;
+  return _command(5, "RES\x0d\n", 3, true);
 }
 
 const char* Hameg::getDeviceID()
 {
-  if (!_command(3, "ID?", 3+27))
+  if (0 != _command(3, "ID?", 3+27))
     return NULL;
   if (!_hasPrefix("ID:"))
     return NULL;
@@ -299,7 +294,7 @@ const char* Hameg::getDeviceID()
 
 const char* Hameg::getFrontControllerVersion()
 {
-  if (!_command(5, "VERS?", 5+15))
+  if (0 != _command(5, "VERS?", 5+15))
     return NULL;
   if (!_hasPrefix("VERS:"))
     return NULL;
@@ -312,20 +307,18 @@ const char* Hameg::getFrontControllerVersion()
 // Hold Wave Form (signal capture is paused?)
 bool Hameg::getHoldWaveForm()
 {
-  if (!_command(7, "HLDWFM?", 7+1))
+  if (0 != _command(7, "HLDWFM?", 7+1))
     return false;
   if (!_hasPrefix("HLDWFM:"))
     return false;
   return (m_Buffer[7] == '1');
 }
 
-bool Hameg::setHoldWaveForm(UInt8 Hold)
+int Hameg::setHoldWaveForm(UInt8 Hold)
 {
   char Buf[9];
   sprintf(Buf, "HLDWFM=%hhu", (Hold) ? 1 : 0);
-  if (!_command(8, Buf, 3))
-    return false;
-  return true;
+  return _command(8, Buf, 3, true);
 }
 
 UInt8* Hameg::getChannelWaveForm(UInt8 Channel)
@@ -340,7 +333,7 @@ UInt8* Hameg::getChannelWaveForm(UInt8 Channel)
       return NULL;
 
     Cmd[10] = '\x08';
-    if (!_command(11, Cmd, 7+2*2+2048, m_Buffer, 2000))
+    if (0 != _command(11, Cmd, 7+2*2+2048, false, m_Buffer, 2000))
       return NULL;
     if (!_hasPrefix(Cmd))
       return NULL;
@@ -421,7 +414,7 @@ bool Hameg::getCsvWaveForm(UInt8 Channel, std::string& csv)
 
 bool Hameg::readDDF(UInt8 pDDF[14])
 {
-  if (!_command(4, "DDF?", 4+14))
+  if (0 != _command(4, "DDF?", 4+14))
     return false;
   if (!_hasPrefix("DDF:"))
     return false;
@@ -431,7 +424,7 @@ bool Hameg::readDDF(UInt8 pDDF[14])
 
 bool Hameg::readDDF1(UInt16 pDDF1[8])
 {
-  if (!_command(5, "DDF1?", 5+16))
+  if (0 != _command(5, "DDF1?", 5+16))
     return false;
   if (!_hasPrefix("DDF1:"))
     return false;
@@ -441,7 +434,7 @@ bool Hameg::readDDF1(UInt16 pDDF1[8])
 
 bool Hameg::readRODDF(UInt16 pRODDF[5])
 {
-  if (!_command(6, "RODDF?", 6+10))
+  if (0 != _command(6, "RODDF?", 6+10))
     return false;
   if (!_hasPrefix("RODDF:"))
     return false;
@@ -451,7 +444,7 @@ bool Hameg::readRODDF(UInt16 pRODDF[5])
 
 bool Hameg::getTriggerStatus(UInt8* pTriggerStatus)
 {
-  if (!_command(7, "TRGSTA?", 7+1))
+  if (0 != _command(7, "TRGSTA?", 7+1))
     return false;
   if (!_hasPrefix("TRGSTA:"))
     return false;

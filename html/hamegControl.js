@@ -129,10 +129,10 @@ function getStoreModeSelector()
 {
 	return ("<select id=\"store_mode\" title=\"Select storage mode\" onchange=\"guiCallback(this)\">"+
 		"<option value=\"RFR\">RFR</option>"+
-		"<option value=\"SGL\">SGL</option>"+
-		"<option value=\"ROL\">ROL</option>"+
-		"<option value=\"ENV\">ENV</option>"+
-		"<option value=\"AVR\">AVR</option>"+
+		"<option value=\"SGL\">SINGLE</option>"+
+		"<option value=\"ROL\">ROLLING</option>"+
+		"<option value=\"ENV\">ENVELP</option>"+
+		"<option value=\"AVR\">AVERAGE</option>"+
 		"</select>");
 }
 

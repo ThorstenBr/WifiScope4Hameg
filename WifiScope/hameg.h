@@ -2,6 +2,8 @@
 #include "utypes.h"
 #include <string>
 
+#define HAMEG_COMM_ERROR -1
+
 class Hameg
 {
   public:
@@ -9,13 +11,13 @@ class Hameg
     static Hameg* getSingleton();
 
     bool connect();
-    bool disconnect();
+    int  disconnect();
     
     const char* getDeviceID();
     const char* getFrontControllerVersion();
 
     bool getHoldWaveForm();
-    bool setHoldWaveForm(UInt8 Hold);
+    int  setHoldWaveForm(UInt8 Hold);
     
     bool readDDF  (UInt8  pDDF[14]);
     bool readDDF1 (UInt16 pDDF1[8]);
@@ -31,14 +33,14 @@ class Hameg
     UInt8* getReferenceWaveForm(UInt8 RefChannel);
     bool getReferenceWaveForm(UInt8 Channel, std::string& json);
 
-    bool setCH(UInt8 Channel, UInt8 VoltDiv, UInt8 Enabled, UInt8 AC, UInt8 Inverted, UInt8 GND);
-    bool setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZInput);
-    bool setStoreMode(UInt8 Mode, UInt8 PreTrigger, UInt8 Ref1, UInt8 Ref2);
-    bool setTrigger(UInt8 FallingEdge, UInt8 PeakPeak, UInt8 Norm, UInt8 Coupling);
-    bool setVerticalMode(UInt8 AltTrigger, UInt8 Ch1_10_1, UInt8 Ch2_10_1, UInt8 Bwl, UInt8 Chop, UInt8 Add, UInt8 TriggerSource);
+    int  setCH(UInt8 Channel, UInt8 VoltDiv, UInt8 Enabled, UInt8 AC, UInt8 Inverted, UInt8 GND);
+    int  setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZInput);
+    int  setStoreMode(UInt8 Mode, UInt8 PreTrigger, UInt8 Ref1, UInt8 Ref2);
+    int  setTrigger(UInt8 FallingEdge, UInt8 PeakPeak, UInt8 Norm, UInt8 Coupling);
+    int  setVerticalMode(UInt8 AltTrigger, UInt8 Ch1_10_1, UInt8 Ch2_10_1, UInt8 Bwl, UInt8 Chop, UInt8 Add, UInt8 TriggerSource);
 
-    bool autoSet();
-    bool resetSingle();
+    int  autoset();
+    int  resetSingle();
 
   protected:
     HardwareSerial* m_pSerial;
@@ -50,7 +52,7 @@ class Hameg
     bool _hasPrefix(const char* pPrefix, const char* pBuffer=NULL);
     void _write(UInt32 ByteCount, const char* pData);
     bool _read(UInt32 ByteCount, char* pBuffer=NULL, UInt32 TimeoutMs=500);
-    bool _command(UInt32 WriteByteCount, const char* pData, UInt32 ReadByteCount, char* pBuffer=NULL, UInt32 TimeoutMs=500);
+    int  _command(UInt32 WriteByteCount, const char* pData, UInt32 ReadByteCount, bool CheckStatusByte=false, char* pBuffer=NULL, UInt32 TimeoutMs=500);
 
   private:
     bool m_Connected;
