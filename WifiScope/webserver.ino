@@ -164,8 +164,8 @@ void handle_Set()
           TriggerSource = 0;
           AltTrigger = 1;
         }
-        String Ch1ProbeStr = g_pWebServer->arg("ch1_probe");
-        String Ch2ProbeStr = g_pWebServer->arg("ch2_probe");
+        String Ch1ProbeStr = g_pWebServer->arg("ch1Probe");
+        String Ch2ProbeStr = g_pWebServer->arg("ch2Probe");
         UInt8 Ch1_10_1     = mapString(Ch1ProbeStr, ProbeStrings);
         UInt8 Ch2_10_1     = mapString(Ch2ProbeStr, ProbeStrings);
         UInt8 Add          = getParameterInt("add", 0);
@@ -173,6 +173,21 @@ void handle_Set()
         UInt8 Bwl          = getParameterInt("bwl", 0);
 
         Status = g_pHameg->setVerticalMode(AltTrigger, Ch1_10_1, Ch2_10_1, Bwl, Chop, Add, TriggerSource);
+      }
+      else
+      if (ParamName == "HORIZONTAL_MODE")
+      {
+        String OpModeStr   = g_pWebServer->arg("opMode");
+        UInt8 OpMode       = mapString(OpModeStr, OpModeStrings);
+        //                   (OpMode == 0)   // analog
+        UInt8 DigitalStore = (OpMode == 1);  // digitial storage
+        UInt8 XY           = (OpMode == 2);  // XY
+        UInt8 CT           = (OpMode == 3);  // CT
+        UInt8 X10 = getParameterInt("x10", 0);
+        UInt8 PPDetect = getParameterInt("ppDetect", 0);
+        UInt8 TbMode = getParameterInt("tbMode", 0);
+
+        Status = g_pHameg->setHorizontalMode(CT, XY, X10, DigitalStore, PPDetect, TbMode);
       }
       else
       if (ParamName == "TRIGGER")

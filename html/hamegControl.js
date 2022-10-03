@@ -154,10 +154,20 @@ function getStoreModeSelector()
 		"</select>");
 }
 
-function getOpModeSelector()
+function getScopeModeSelector()
 {
-	return ("<select id=\"op_mode\" title=\"Select operation mode\" onchange=\"guiCallback(this)\">"+
-		"<option value=\"\"></option>"+
+	return ("<select id=\"op_mode\" title=\"Select main operation mode\" onchange=\"guiCallback(this)\">"+
+		"<option value=\"ANALOG\">ANALOG</option>"+
+		"<option value=\"DIGITAL\">DIGTAL</option>"+
+		"<option value=\"XY\">XY</option>"+
+		"<option value=\"CT\">CT</option>"+
+		"</select>");
+}
+
+function getDualModeSelector()
+{
+	return ("<select id=\"dual_mode\" title=\"Select dual channel operation\" onchange=\"guiCallback(this)\">"+
+		"<option value=\"ALT\">ALT</option>"+
 		"<option value=\"CHOP\">CHOP</option>"+
 		"<option value=\"ADD\">ADD</option>"+
 		"</select>");
@@ -244,29 +254,28 @@ function addGuiElements(ScopeTable)
 
 	var update = '<button type="button" id="update" onclick="updateData();" title=\"Refresh display\">UPDATE</button>';
 	var ref = getReferenceSelector();
-	var hold = '<button type="button" id="hold" onclick="guiCallback({\'id\':\'hold\', \'value\':\'0\'});" title=\"Hold current scope measurement data\">HOLD</button>';
+	var hold = '<button type="button" id="hold" onclick="guiCallback({\'id\':\'hold\', \'value\':\'0\'});" title=\"Hold scope measurement data (remote)\">HOLD</button>';
 
 	updateHtml(GuiCells.ButtonsRight, (trigger_edge+"<br>"+getTriggerModeSelector()+"<br>"+getPreTriggerSelector()+"<br>"+
 	                                   getTriggerCouplingSelector()+"<br>"+getTriggerSourceSelector()+"<br>"+reset_single));
 	updateHtml(GuiCells.ButtonsLeft, wide+"<br>"+hold+"<br>"+update+"<br>"+ref);
 
-	BottomRow.insertCell(0);
+	GuiCells.OpMode = BottomRow.insertCell(0);
 	GuiCells.Y1 = BottomRow.insertCell(1);
-	updateHtml(GuiCells.Y1, "<font id='ch_info1'></font>"+getVoltageSelector(1));
 	GuiCells.Y2 = BottomRow.insertCell(2);
-	updateHtml(GuiCells.Y2, "<font id='ch_info2'></font>"+getVoltageSelector(2));
-
-	GuiCells.OpMode = BottomRow.insertCell(3);
-	updateHtml(GuiCells.OpMode, "<font class='label'>OP</font><br>"+getOpModeSelector());
-
+	GuiCells.DualMode = BottomRow.insertCell(3);
 	GuiCells.StoreMode = BottomRow.insertCell(4);
-	updateHtml(GuiCells.StoreMode, "<font class='label'>Store Mode</font><br>"+getStoreModeSelector());
-
 	GuiCells.TDiv = BottomRow.insertCell(5);
+	GuiCells.AutoSet = BottomRow.insertCell(6);
+
+	updateHtml(GuiCells.Y1, "<font id='ch_info1'></font>"+getVoltageSelector(1));
+	updateHtml(GuiCells.Y2, "<font id='ch_info2'></font>"+getVoltageSelector(2));
+	updateHtml(GuiCells.DualMode, "<font class='label'>Dual</font><br>"+ getDualModeSelector());
+	updateHtml(GuiCells.OpMode, "<font class='label'>OP</font><br>"+ getScopeModeSelector());
+	updateHtml(GuiCells.StoreMode, "<font class='label'>Store Mode</font><br>"+getStoreModeSelector());
 	updateHtml(GuiCells.TDiv, "<font class='label'>T/DIV</font><br>"+getTimeSelector());
 	
 	var autoset = '<button type="button" id="autoset" onclick="guiCallback(this);" title=\"Automaticaly adapt oscilloscope settings to signals\">AUTOSET</button>'; 
-	GuiCells.AutoSet = BottomRow.insertCell(6);
 	updateHtml(GuiCells.AutoSet, "<br>"+autoset);
 
 	GuiCells.ErrorMessage = BottomRow2.insertCell(0);
@@ -543,7 +552,7 @@ function guiCallback(element)
 		}
 	}
 	else
-	if ((element.id == "op_mode")||
+	if ((element.id == "dual_mode")||
 	    (element.id == "trigger_source"))
 	{
 		var Value = element.value;
@@ -552,28 +561,35 @@ function guiCallback(element)
 			HamegSetting.trigger.source = Value;
 		}
 		else
-		if (element.id == "op_mode")
+		if (element.id == "dual_mode")
 		{
+			HamegSetting.general.add = 0;
+			HamegSetting.general.chop = 0;
 			if (Value == "ADD")
 			{
 				HamegSetting.general.add = 1;
-				HamegSetting.general.chop = 0;
 			}
 			else
 			if (Value == "CHOP")
 			{
-				HamegSetting.general.add = 0;
 				HamegSetting.general.chop = 1;
 			}
 			else
-			if (Value == "")
+			if (Value == "ALT")
 			{
-				updateGuiElements();
-				return;
 			}
 		}
-		doRequest(["VERTICAL_MODE", 0, "triggerSource", HamegSetting.trigger.source, "ch1_probe", HamegSetting.ch1.probe, "ch2_probe", HamegSetting.ch2.probe,
+		doRequest(["VERTICAL_MODE", 0, "triggerSource", HamegSetting.trigger.source, "ch1Probe", HamegSetting.ch1.probe, "ch2Probe", HamegSetting.ch2.probe,
 			   "add", HamegSetting.general.add, "chop", HamegSetting.general.chop, "bwl", HamegSetting.general.bwl]);
+	}
+	else
+	if (element.id == "op_mode")
+	{
+		HamegSetting.general.opMode = element.value;
+		HamegSetting.general.x10 = 0;
+
+		doRequest(["HORIZONTAL_MODE", 0, "opMode", HamegSetting.general.opMode, "x10", HamegSetting.general.x10,
+		           "ppDetect", HamegSetting.general.ppDetect, "tbMode", HamegSetting.general.tbMode]);
 	}
 	else
 	if (element.id == "ref")
@@ -665,7 +681,7 @@ function updateGuiElements()
 
 	var Title = HamegSetting.id.device.split(" ")[0];
 	document.title = Title;
-	updateHtml(GuiCells.DeviceID, "<center><font color=#88f><b>"+Title+"</b></font></center>");
+	updateHtml(GuiCells.DeviceID, "<center><font color=#88f><b>"+Title+"</b><br><font size='2'>WiFiScope4Hameg</font></font></center>");
 
 	var TriggerMode = document.getElementById("trigger_mode");
 	updateValue(TriggerMode, (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? "NORM" : "AUTO");
@@ -676,14 +692,17 @@ function updateGuiElements()
 	updateValue(document.getElementById("trigger_source"), HamegSetting.trigger.source);
 	updateValue(document.getElementById("store_mode"), HamegSetting.trigger.storeMode);
 	updateValue(document.getElementById("time_div"), HamegSetting.general.tba);
+	updateValue(document.getElementById("op_mode"), HamegSetting.general.opMode);
 
 	GuiCells.Hold.style.color = "magenta";
 	updateHtml(GuiCells.Hold, (HamegSetting.trigger.hold) ? "HOLD" : "");
 
-	var opMode = (HamegSetting.general.chop) ? "CHOP" : "";
+	var DualMode = (HamegSetting.general.chop) ? "CHOP" : "ALT";
 	if (HamegSetting.general.add)
-		opMode = "ADD";
-	updateValue(document.getElementById("op_mode"), opMode);
+		DualMode = "ADD";
+	var DualElement = document.getElementById("dual_mode");
+	updateValue(DualElement, DualMode);
+	DualElement.disabled = ((!HamegSetting.ch1.enabled)||(!HamegSetting.ch2.enabled));
 
 	// update details on channel 1+2
 	updateChInfo(1, HamegSetting.ch1);

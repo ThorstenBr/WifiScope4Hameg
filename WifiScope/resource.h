@@ -341,10 +341,19 @@
     "\"<option value=\\\"AVR\\\">AVERAGE</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
-    "function getOpModeSelector()\n" \
+    "function getScopeModeSelector()\n" \
     "{\n" \
-    "return (\"<select id=\\\"op_mode\\\" title=\\\"Select operation mode\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
-    "\"<option value=\\\"\\\"></option>\"+\n" \
+    "return (\"<select id=\\\"op_mode\\\" title=\\\"Select main operation mode\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
+    "\"<option value=\\\"ANALOG\\\">ANALOG</option>\"+\n" \
+    "\"<option value=\\\"DIGITAL\\\">DIGTAL</option>\"+\n" \
+    "\"<option value=\\\"XY\\\">XY</option>\"+\n" \
+    "\"<option value=\\\"CT\\\">CT</option>\"+\n" \
+    "\"</select>\");\n" \
+    "}\n" \
+    "function getDualModeSelector()\n" \
+    "{\n" \
+    "return (\"<select id=\\\"dual_mode\\\" title=\\\"Select dual channel operation\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
+    "\"<option value=\\\"ALT\\\">ALT</option>\"+\n" \
     "\"<option value=\\\"CHOP\\\">CHOP</option>\"+\n" \
     "\"<option value=\\\"ADD\\\">ADD</option>\"+\n" \
     "\"</select>\");\n" \
@@ -419,23 +428,24 @@
     "var trigger_edge = '<button type=\"button\" id=\"trigger_edge\" onclick=\"guiCallback(this);\" title=\"Trigger on rising or falling edge\">TRIG &uarr;</button>';\n" \
     "var update = '<button type=\"button\" id=\"update\" onclick=\"updateData();\" title=\\\"Refresh display\\\">UPDATE</button>';\n" \
     "var ref = getReferenceSelector();\n" \
-    "var hold = '<button type=\"button\" id=\"hold\" onclick=\"guiCallback({\\'id\\':\\'hold\\', \\'value\\':\\'0\\'});\" title=\\\"Hold current scope measurement data\\\">HOLD</button>';\n" \
+    "var hold = '<button type=\"button\" id=\"hold\" onclick=\"guiCallback({\\'id\\':\\'hold\\', \\'value\\':\\'0\\'});\" title=\\\"Hold scope measurement data (remote)\\\">HOLD</button>';\n" \
     "updateHtml(GuiCells.ButtonsRight, (trigger_edge+\"<br>\"+getTriggerModeSelector()+\"<br>\"+getPreTriggerSelector()+\"<br>\"+\n" \
     "getTriggerCouplingSelector()+\"<br>\"+getTriggerSourceSelector()+\"<br>\"+reset_single));\n" \
     "updateHtml(GuiCells.ButtonsLeft, wide+\"<br>\"+hold+\"<br>\"+update+\"<br>\"+ref);\n" \
-    "BottomRow.insertCell(0);\n" \
+    "GuiCells.OpMode = BottomRow.insertCell(0);\n" \
     "GuiCells.Y1 = BottomRow.insertCell(1);\n" \
-    "updateHtml(GuiCells.Y1, \"<font id='ch_info1'></font>\"+getVoltageSelector(1));\n" \
     "GuiCells.Y2 = BottomRow.insertCell(2);\n" \
-    "updateHtml(GuiCells.Y2, \"<font id='ch_info2'></font>\"+getVoltageSelector(2));\n" \
-    "GuiCells.OpMode = BottomRow.insertCell(3);\n" \
-    "updateHtml(GuiCells.OpMode, \"<font class='label'>OP</font><br>\"+getOpModeSelector());\n" \
+    "GuiCells.DualMode = BottomRow.insertCell(3);\n" \
     "GuiCells.StoreMode = BottomRow.insertCell(4);\n" \
-    "updateHtml(GuiCells.StoreMode, \"<font class='label'>Store Mode</font><br>\"+getStoreModeSelector());\n" \
     "GuiCells.TDiv = BottomRow.insertCell(5);\n" \
+    "GuiCells.AutoSet = BottomRow.insertCell(6);\n" \
+    "updateHtml(GuiCells.Y1, \"<font id='ch_info1'></font>\"+getVoltageSelector(1));\n" \
+    "updateHtml(GuiCells.Y2, \"<font id='ch_info2'></font>\"+getVoltageSelector(2));\n" \
+    "updateHtml(GuiCells.DualMode, \"<font class='label'>Dual</font><br>\"+ getDualModeSelector());\n" \
+    "updateHtml(GuiCells.OpMode, \"<font class='label'>OP</font><br>\"+ getScopeModeSelector());\n" \
+    "updateHtml(GuiCells.StoreMode, \"<font class='label'>Store Mode</font><br>\"+getStoreModeSelector());\n" \
     "updateHtml(GuiCells.TDiv, \"<font class='label'>T/DIV</font><br>\"+getTimeSelector());\n" \
     "var autoset = '<button type=\"button\" id=\"autoset\" onclick=\"guiCallback(this);\" title=\\\"Automaticaly adapt oscilloscope settings to signals\\\">AUTOSET</button>';\n" \
-    "GuiCells.AutoSet = BottomRow.insertCell(6);\n" \
     "updateHtml(GuiCells.AutoSet, \"<br>\"+autoset);\n" \
     "GuiCells.ErrorMessage = BottomRow2.insertCell(0);\n" \
     "GuiCells.ErrorMessage.colSpan = 5;\n" \
@@ -686,7 +696,7 @@
     "}\n" \
     "}\n" \
     "else\n" \
-    "if ((element.id == \"op_mode\")||\n" \
+    "if ((element.id == \"dual_mode\")||\n" \
     "(element.id == \"trigger_source\"))\n" \
     "{\n" \
     "var Value = element.value;\n" \
@@ -695,28 +705,34 @@
     "HamegSetting.trigger.source = Value;\n" \
     "}\n" \
     "else\n" \
-    "if (element.id == \"op_mode\")\n" \
+    "if (element.id == \"dual_mode\")\n" \
     "{\n" \
+    "HamegSetting.general.add = 0;\n" \
+    "HamegSetting.general.chop = 0;\n" \
     "if (Value == \"ADD\")\n" \
     "{\n" \
     "HamegSetting.general.add = 1;\n" \
-    "HamegSetting.general.chop = 0;\n" \
     "}\n" \
     "else\n" \
     "if (Value == \"CHOP\")\n" \
     "{\n" \
-    "HamegSetting.general.add = 0;\n" \
     "HamegSetting.general.chop = 1;\n" \
     "}\n" \
     "else\n" \
-    "if (Value == \"\")\n" \
+    "if (Value == \"ALT\")\n" \
     "{\n" \
-    "updateGuiElements();\n" \
-    "return;\n" \
     "}\n" \
     "}\n" \
-    "doRequest([\"VERTICAL_MODE\", 0, \"triggerSource\", HamegSetting.trigger.source, \"ch1_probe\", HamegSetting.ch1.probe, \"ch2_probe\", HamegSetting.ch2.probe,\n" \
+    "doRequest([\"VERTICAL_MODE\", 0, \"triggerSource\", HamegSetting.trigger.source, \"ch1Probe\", HamegSetting.ch1.probe, \"ch2Probe\", HamegSetting.ch2.probe,\n" \
     "\"add\", HamegSetting.general.add, \"chop\", HamegSetting.general.chop, \"bwl\", HamegSetting.general.bwl]);\n" \
+    "}\n" \
+    "else\n" \
+    "if (element.id == \"op_mode\")\n" \
+    "{\n" \
+    "HamegSetting.general.opMode = element.value;\n" \
+    "HamegSetting.general.x10 = 0;\n" \
+    "doRequest([\"HORIZONTAL_MODE\", 0, \"opMode\", HamegSetting.general.opMode, \"x10\", HamegSetting.general.x10,\n" \
+    "\"ppDetect\", HamegSetting.general.ppDetect, \"tbMode\", HamegSetting.general.tbMode]);\n" \
     "}\n" \
     "else\n" \
     "if (element.id == \"ref\")\n" \
@@ -796,7 +812,7 @@
     "document.getElementById(\"hold\").style.background = (HamegSetting.trigger.hold) ? \"red\" : \"\";\n" \
     "var Title = HamegSetting.id.device.split(\" \")[0];\n" \
     "document.title = Title;\n" \
-    "updateHtml(GuiCells.DeviceID, \"<center><font color=#88f><b>\"+Title+\"</b></font></center>\");\n" \
+    "updateHtml(GuiCells.DeviceID, \"<center><font color=#88f><b>\"+Title+\"</b><br><font size='2'>WiFiScope4Hameg</font></font></center>\");\n" \
     "var TriggerMode = document.getElementById(\"trigger_mode\");\n" \
     "updateValue(TriggerMode, (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? \"NORM\" : \"AUTO\");\n" \
     "TriggerMode.disabled = (HamegSetting.trigger.singleShot) ? 1 : 0;\n" \
@@ -805,12 +821,15 @@
     "updateValue(document.getElementById(\"trigger_source\"), HamegSetting.trigger.source);\n" \
     "updateValue(document.getElementById(\"store_mode\"), HamegSetting.trigger.storeMode);\n" \
     "updateValue(document.getElementById(\"time_div\"), HamegSetting.general.tba);\n" \
+    "updateValue(document.getElementById(\"op_mode\"), HamegSetting.general.opMode);\n" \
     "GuiCells.Hold.style.color = \"magenta\";\n" \
     "updateHtml(GuiCells.Hold, (HamegSetting.trigger.hold) ? \"HOLD\" : \"\");\n" \
-    "var opMode = (HamegSetting.general.chop) ? \"CHOP\" : \"\";\n" \
+    "var DualMode = (HamegSetting.general.chop) ? \"CHOP\" : \"ALT\";\n" \
     "if (HamegSetting.general.add)\n" \
-    "opMode = \"ADD\";\n" \
-    "updateValue(document.getElementById(\"op_mode\"), opMode);\n" \
+    "DualMode = \"ADD\";\n" \
+    "var DualElement = document.getElementById(\"dual_mode\");\n" \
+    "updateValue(DualElement, DualMode);\n" \
+    "DualElement.disabled = ((!HamegSetting.ch1.enabled)||(!HamegSetting.ch2.enabled));\n" \
     "updateChInfo(1, HamegSetting.ch1);\n" \
     "updateChInfo(2, HamegSetting.ch2);\n" \
     "var ref = document.getElementById(\"ref\");\n" \

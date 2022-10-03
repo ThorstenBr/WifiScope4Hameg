@@ -35,6 +35,11 @@ const PROGMEM char MimeTypeJSON[]    = "application/json";
 /* string arrays (in program memory to save RAM)                       */
 /***********************************************************************/
 
+const PROGMEM char* const OpModeStrings[] = {
+  "ANALOG", "DIGITAL", "XY", "CT",
+  NULL
+};
+
 const PROGMEM char* const StoreModeStrings[] = {
   "RFR", "SGL", "ROL", "ENV", "AVR", "?5?", "?6?", "?7?",
   NULL

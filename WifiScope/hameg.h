@@ -55,6 +55,7 @@ class Hameg
     int  setStoreMode(UInt8 Mode, UInt8 PreTrigger, UInt8 Ref1, UInt8 Ref2);
     int  setTrigger(UInt8 FallingEdge, UInt8 PeakPeak, UInt8 Norm, UInt8 Coupling);
     int  setVerticalMode(UInt8 AltTrigger, UInt8 Ch1_10_1, UInt8 Ch2_10_1, UInt8 Bwl, UInt8 Chop, UInt8 Add, UInt8 TriggerSource);
+    int  setHorizontalMode(UInt8 CT, UInt8 XY, UInt8 X10, UInt8 Store, UInt8 PPDetect, UInt8 TbMode);
 
     int  autoset();
     int  resetSingle();

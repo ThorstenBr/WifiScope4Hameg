@@ -21,7 +21,7 @@
 
 // timeout after which the remote connection to the Hameg scope is
 // automatically dropped (so the user can make manual changes)
-#define HAMEG_REMOTE_MODE_TIMEOUT_MS 1000
+#define HAMEG_REMOTE_MODE_TIMEOUT_MS 200
 
 extern void bin2HexStr(const char* pData, UInt32 Size, std::string& str);
 
@@ -317,6 +317,25 @@ int Hameg::setVerticalMode(UInt8 AltTrigger, UInt8 Ch1_10_1, UInt8 Ch2_10_1, UIn
     Add = 0x08;
   TriggerSource &= 3;
   Buf[8] = AltTrigger | Ch1_10_1 | Ch2_10_1 | Bwl | Chop | Add | TriggerSource;
+  return _command(9, Buf, 3, true, NULL, 1000);
+}
+
+int Hameg::setHorizontalMode(UInt8 CT, UInt8 XY, UInt8 X10, UInt8 Store, UInt8 PPDetect, UInt8 TbMode)
+{
+  char Buf[10];
+  sprintf(Buf, "HORMODE=X");
+  if (CT)
+    CT = 0x80;
+  if (XY)
+    XY = 0x40;
+  if (X10)
+    X10= 0x20;
+  if (Store)
+    Store = 0x10;
+  if (PPDetect)
+    PPDetect = 0x8;
+  TbMode  &= 7;
+  Buf[8] = CT | XY | X10 | Store | PPDetect | TbMode;
   return _command(9, Buf, 3, true, NULL, 1000);
 }
 
@@ -626,9 +645,19 @@ bool triggerDDF2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, UInt8 Hold
   UInt8 CT    = (b & 0x80) > 0;
   UInt8 XY    = (b & 0x40) > 0;
   UInt8 X10   = (b & 0x20) > 0;
-  UInt8 Store = (b & 0x10) > 0; // 1=Digital storage mode, 0=Analog mode
+  UInt8 DigStore = (b & 0x10) > 0; // 1=Digital storage mode, 0=Analog mode
   UInt8 PpDetect = (b & 0x08) > 0; // only Hameg1507
   UInt8 TbMode = (b & 7);
+
+  UInt8 OpMode = 0; // ANALOG
+  if (CT)
+    OpMode = 3;     // CT
+  else
+  if (XY)
+    OpMode = 2;     // XY
+  else
+  if (DigStore)
+    OpMode = 1;     // DIGITAL
 
   // TRIG byte
   b = pDDF[6];
@@ -718,11 +747,10 @@ bool triggerDDF2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, UInt8 Hold
           "\"tba_nS\":%llu," JSON_LF
           "\"zInput\":%hhu," JSON_LF
           "\"xPosition\":%hi," JSON_LF
-          "\"ct\":%hhu," JSON_LF
-          "\"xy\":%hhu," JSON_LF
+          "\"opMode\":\"%s\"," JSON_LF
           "\"x10\":%hhu," JSON_LF
-          "\"digitalStore\":%hhu," JSON_LF
-          "\"ppDetect\":%hhu" JSON_LF
+          "\"ppDetect\":%hhu," JSON_LF
+          "\"tbMode\":%hhu" JSON_LF
           "}"
           ,
           Add,
@@ -732,11 +760,10 @@ bool triggerDDF2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, UInt8 Hold
           TBA_nS,
           ZInput,
           XPos,
-          CT,
-          XY,
+          OpModeStrings[OpMode],
           X10,
-          Store,
-          PpDetect
+          PpDetect,
+          TbMode
           ) >= sizeof(Buf))
   {
     // string too long

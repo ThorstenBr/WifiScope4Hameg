@@ -32,6 +32,7 @@ extern const PROGMEM char MimeTypeJSON[];
 /***********************************************************************/
 /* string arrays (in program memory to save RAM)                       */
 /***********************************************************************/
+extern const PROGMEM char* const OpModeStrings[];
 extern const PROGMEM char* const StoreModeStrings[];
 extern const PROGMEM char* const CouplingStrings[];
 extern const PROGMEM char* const PreTriggerStrings[];
