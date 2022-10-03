@@ -136,17 +136,26 @@ function getStoreModeSelector()
 		"</select>");
 }
 
+function getOpModeSelector()
+{
+	return ("<select id=\"op_mode\" title=\"Select operation mode\" onchange=\"guiCallback(this)\">"+
+		"<option value=\"\"></option>"+
+		"<option value=\"CHOP\">CHOP</option>"+
+		"<option value=\"ADD\">ADD</option>"+
+		"</select>");
+}
+
 function getPreTriggerSelector()
 {
 	return ("<select class=\"touch\" id=\"pre_trigger\" title=\"Select pre-trigger\" onchange=\"guiCallback(this)\">"+
-		"<option value=\"-75%\">-75%</option>"+
-		"<option value=\"-50%\">-50%</option>"+
-		"<option value=\"-25%\">-25%</option>"+
-		"<option value=\"0%\">0%</option>"+
-		"<option value=\"25%\">25%</option>"+
-		"<option value=\"50%\">50%</option>"+
-		"<option value=\"75%\">75%</option>"+
-		"<option value=\"100%\">100%</option>"+
+		"<option value=\"-75%\">PT -75%</option>"+
+		"<option value=\"-50%\">PT -50%</option>"+
+		"<option value=\"-25%\">PT -25%</option>"+
+		"<option value=\"0%\">PT 0%</option>"+
+		"<option value=\"25%\">PT 25%</option>"+
+		"<option value=\"50%\">PT 50%</option>"+
+		"<option value=\"75%\">PT 75%</option>"+
+		"<option value=\"100%\">PT 100%</option>"+
 		"</select>");
 }
 
@@ -155,6 +164,7 @@ function getTriggerSourceSelector()
 	return ("<select class=\"touch\" id=\"trigger_source\" title=\"Select trigger source\" onchange=\"guiCallback(this)\">"+
 		"<option value=\"CH1\">CH1</option>"+
 		"<option value=\"CH2\">CH2</option>"+
+		"<option value=\"CH1,CH2\">CH1/2 (ALT)</option>"+
 		"<option value=\"EXT\">EXT</option>"+
 		"</select>");
 }
@@ -172,6 +182,14 @@ function getTriggerCouplingSelector()
 		"</select>");
 }
 
+function getTriggerModeSelector()
+{
+	return ("<select class=\"touch\" id=\"trigger_mode\" title=\"Select normal or automatic trigger mode\" onchange=\"guiCallback(this)\">"+
+		"<option value=\"AUTO\">AUTO</option>"+
+		"<option value=\"NORM\">NORM</option>"+
+		"</select>");
+}
+
 function getReferenceSelector()
 {
 	return ("<select id=\"ref\" title=\"Select reference to display\" onchange=\"guiCallback(this)\">"+
@@ -186,43 +204,51 @@ function addGuiElements(ScopeTable)
 	var TopRow    = ScopeTable.rows[0];
 	var MiddleRow = ScopeTable.rows[1];
 	var BottomRow = ScopeTable.rows[2];
-	
+
 	GuiCells.DeviceID = TopRow.insertCell(0);
-	GuiCells.Trigger = TopRow.insertCell(1);
+	TopRow.insertCell(1);
 	GuiCells.Note = TopRow.insertCell(2);
 	GuiCells.Note.innerHTML = "<textarea rows='2' cols='60' spellcheck='false' title='comments, notes, free text area...'></textarea>";
-	GuiCells.Note.colSpan = 2;
+	GuiCells.Note.colSpan = 3;
 
+	// top-right
 	GuiCells.Hold = TopRow.insertCell(3);
 	GuiCells.Hold.style.fontWeight = "bold";
 	GuiCells.Hold.style.fontSize = "24px";
 
 	GuiCells.ButtonsLeft = MiddleRow.cells[0];
 	GuiCells.ButtonsRight = MiddleRow.cells[2];
-	
-	
+
 	var wide = "<button id=\"wide\" onclick=\"toggleWideView();\" title=\"Toggle wide display\">&#10231;</button>";
-	var autoset = '<button type="button" id="autoset" onclick="guiCallback(this);" title=\"Automaticaly adapt oscilloscope settings to signals\">AUTOSET</button>'; 
 	var reset_single = '<button type="button" id="reset_single" onclick="guiCallback(this);" title="Reset trigger (in single mode only)">RES</button>';
-	var trigger_edge = '<button type="button" id="trigger_edge" onclick="guiCallback(this);" title="Trigger on rising or falling edge">TRIG &uarr;</button>'; 
-	
+	var trigger_edge = '<button type="button" id="trigger_edge" onclick="guiCallback(this);" title="Trigger on rising or falling edge">TRIG &uarr;</button>';
+
 	var update = '<button type="button" id="update" onclick="updateData();" title=\"Refresh display\">UPDATE</button>';
 	var ref = getReferenceSelector();
 	var hold = '<button type="button" id="hold" onclick="guiCallback({\'id\':\'hold\', \'value\':\'0\'});" title=\"Hold current scope measurement data\">HOLD</button>';
-	
-	GuiCells.ButtonsRight.innerHTML = autoset+"<br>"+trigger_edge+"<br>"+getPreTriggerSelector()+"<br>"+getTriggerCouplingSelector()+"<br>"+getTriggerSourceSelector()+"<br>"+reset_single;
+
+	GuiCells.ButtonsRight.innerHTML = (trigger_edge+"<br>"+getTriggerModeSelector()+"<br>"+getPreTriggerSelector()+"<br>"+
+	                                   getTriggerCouplingSelector()+"<br>"+getTriggerSourceSelector()+"<br>"+reset_single);
 	GuiCells.ButtonsLeft.innerHTML  = wide+"<br>"+hold+"<br>"+update+"<br>"+ref;
 
-	GuiCells.Y1 = BottomRow.insertCell(0);
+	BottomRow.insertCell(0);
+	GuiCells.Y1 = BottomRow.insertCell(1);
 	GuiCells.Y1.innerHTML = "<font id='ch_info1'></font>"+getVoltageSelector(1);
-	GuiCells.Y2 = BottomRow.insertCell(1);
+	GuiCells.Y2 = BottomRow.insertCell(2);
 	GuiCells.Y2.innerHTML = "<font id='ch_info2'></font>"+getVoltageSelector(2);
 
-	GuiCells.StoreMode = BottomRow.insertCell(2);
+	GuiCells.OpMode = BottomRow.insertCell(3);
+	GuiCells.OpMode.innerHTML = "<font class='label'>OP</font><br>"+getOpModeSelector();
+
+	GuiCells.StoreMode = BottomRow.insertCell(4);
 	GuiCells.StoreMode.innerHTML = "<font class='label'>Store Mode</font><br>"+getStoreModeSelector();
-		
-	GuiCells.TDiv = BottomRow.insertCell(3);
+
+	GuiCells.TDiv = BottomRow.insertCell(5);
 	GuiCells.TDiv.innerHTML = "<font class='label'>T/DIV</font><br>"+getTimeSelector();
+	
+	var autoset = '<button type="button" id="autoset" onclick="guiCallback(this);" title=\"Automaticaly adapt oscilloscope settings to signals\">AUTOSET</button>'; 
+	GuiCells.AutoSet = BottomRow.insertCell(6);
+	GuiCells.AutoSet.innerHTML = "<br>"+autoset;
 }
 
 function updateData()
@@ -484,6 +510,33 @@ function guiCallback(element)
 		}
 	}
 	else
+	if ((element.id == "op_mode")||
+	    (element.id == "trigger_source"))
+	{
+		var Value = element.value;
+		if (element.id == "trigger_source")
+		{
+			HamegSetting.trigger.source = Value;
+		}
+		else
+		if (element.id == "op_mode")
+		{
+			if (Value == "ADD")
+			{
+				HamegSetting.general.add = 1;
+				HamegSetting.general.chop = 0;
+			}
+			else
+			if (Value == "CHOP")
+			{
+				HamegSetting.general.add = 0;
+				HamegSetting.general.chop = 1;
+			}
+		}
+		doRequest(["VERTICAL_MODE", 0, "triggerSource", HamegSetting.trigger.source, "ch1_probe", HamegSetting.ch1.probe, "ch2_probe", HamegSetting.ch2.probe,
+			   "add", HamegSetting.general.add, "chop", HamegSetting.general.chop, "bwl", HamegSetting.general.bwl]);
+	}
+	else
 	if (element.id == "ref")
 	{
 		if (element.value == "REF1")
@@ -496,11 +549,18 @@ function guiCallback(element)
 	}
 	else
 	if ((element.id == "trigger_edge")||
+	    (element.id == "trigger_mode")||
 	    (element.id == "trigger_coupling"))
 	{
 		// toggle rising/falling edge
 		if (element.id == "trigger_edge")
 			HamegSetting.trigger.negative = 1-HamegSetting.trigger.negative;
+		else
+		if (element.id == "trigger_mode")
+		{
+			HamegSetting.trigger.norm = (element.value == "NORM") ? 1 : 0;
+		}
+		else
 		if (element.id == "trigger_coupling")
 		{
 			HamegSetting.trigger.coupling = element.value;
@@ -579,12 +639,21 @@ function updateGuiElements()
 	document.title = Title;
 	GuiCells.DeviceID.innerHTML = "<center><font color=#88f><b>"+Title+"</b></font></center>";
 
+	var TriggerMode = document.getElementById("trigger_mode");
+	TriggerMode.value = (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? "NORM" : "AUTO";
+	TriggerMode.disabled = (HamegSetting.trigger.singleShot) ? 1 : 0;
+
 	document.getElementById("trigger_coupling").value = HamegSetting.trigger.coupling;
 	document.getElementById("pre_trigger").value = HamegSetting.trigger.preTrigger;
 	document.getElementById("trigger_source").value = HamegSetting.trigger.source;
 
 	document.getElementById("store_mode").value = HamegSetting.trigger.storeMode;
 	document.getElementById("time_div").value = HamegSetting.general.tba;
+
+	var opMode = (HamegSetting.general.chop) ? "CHOP" : "";
+	if (HamegSetting.general.add)
+		opMode = "ADD";
+	document.getElementById("op_mode").value = opMode;
 
 	// update details on channel 1+2
 	updateChInfo(1, HamegSetting.ch1);
@@ -605,13 +674,11 @@ function updateGuiElements()
 	{
 		resetSingle.disabled = 0;
 		resetSingle.style.background = (HamegSetting.trigger.status == 2) ? "#00b000" : "";
-		resetSingle.style.color = "white";
 	}
 	else
 	{
 		resetSingle.disabled = 1;
-		resetSingle.style.background = "#202020";
-		resetSingle.style.color = "#808080";
+		resetSingle.style.background = "";
 	}
 
 	BlockGuiCallbacks = false;
@@ -633,11 +700,6 @@ function processData(ChartObj, Json)
 
 	Y1Position = HamegSetting.ch1.yPosition/1000.0;
 	Y2Position = HamegSetting.ch2.yPosition/1000.0;
-
-	var TriggerInfo = "";
-	if (HamegSetting.trigger.norm)
-		TriggerInfo += "NORM";
-	GuiCells.Trigger.innerHTML = TriggerInfo;
 
 	var datasetChannel1 = {
 				label: 'Channel 1',
@@ -699,6 +761,12 @@ function processData(ChartObj, Json)
 	// scope data for channel 1
 	if (HamegSetting.ch1.enabled)
 	{
+		if (HamegSetting.general.add)
+		{
+			datasetChannel1.label = (HamegSetting.ch2.inverted) ? "Channel 1 - Channel 2" : "Channel 1 + Channel 2";
+			datasetChannel1.backgroundColor = "cyan";
+			datasetChannel1.borderColor = "cyan";
+		}
 		var ch1  = convertWaveform(HamegSetting.data.channel1);
 		pushDataSet(ChartConfig, ch1, datasetChannel1);
 	}

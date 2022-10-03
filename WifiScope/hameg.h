@@ -35,6 +35,8 @@ class Hameg
     bool setTBA(UInt8 TimeDiv, UInt8 Single, UInt8 ZInput);
     bool setStoreMode(UInt8 Mode, UInt8 PreTrigger, UInt8 Ref1, UInt8 Ref2);
     bool setTrigger(UInt8 FallingEdge, UInt8 PeakPeak, UInt8 Norm, UInt8 Coupling);
+    bool setVerticalMode(UInt8 AltTrigger, UInt8 Ch1_10_1, UInt8 Ch2_10_1, UInt8 Bwl, UInt8 Chop, UInt8 Add, UInt8 TriggerSource);
+
     bool autoSet();
     bool resetSingle();
 

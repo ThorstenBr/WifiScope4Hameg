@@ -52,20 +52,24 @@
     "table.scope button {\n" \
     "width: 80px;\n" \
     "height: 50px;\n" \
-    "margin-bottom: 25px;\n" \
+    "margin-bottom: 20px;\n" \
     "margin-left: 10px;\n" \
     "margin-right: 10px;\n" \
     "background-color: #444;\n" \
     "color: white;\n" \
     "border: 1px solid #202020;\n" \
     "}\n" \
-    "table.scope button:hover {\n" \
+    "table.scope button:enabled:hover {\n" \
     "background-color: #448;\n" \
+    "}\n" \
+    "table.scope button:disabled {\n" \
+    "background-color: #222;\n" \
+    "color: #404040;\n" \
     "}\n" \
     "select {\n" \
     "width: 80px;\n" \
     "height: 50px;\n" \
-    "margin-bottom: 25px;\n" \
+    "margin-bottom: 20px;\n" \
     "margin-left: 10px;\n" \
     "margin-right: 10px;\n" \
     "background-color: #444;\n" \
@@ -73,8 +77,12 @@
     "text-align: center;\n" \
     "border: 1px solid #202020;\n" \
     "}\n" \
-    "select:hover {\n" \
+    "select:enabled:hover {\n" \
     "background-color: #448;\n" \
+    "}\n" \
+    "select:disabled {\n" \
+    "background-color: #222;\n" \
+    "color: #404040;\n" \
     "}\n" \
     "textarea\n" \
     "{\n" \
@@ -167,18 +175,13 @@
     "</script>\n" \
     "<center>\n" \
     "<table class=\"scope\" id=\"scope\">\n" \
+    "<tr></tr>\n" \
     "<tr>\n" \
-    "</tr>\n" \
-    "<tr>\n" \
-    "<td rowspan=2>\n" \
-    "</td>\n" \
+    "<td></td>\n" \
     "<td id=\"tdScope1\" colspan=5 style=\"width: 750px; height: 650px;\">\n" \
     "<canvas class=\"scope\" id=\"scope1\"></canvas>\n" \
     "</td>\n" \
-    "<td>\n" \
-    "</td>\n" \
-    "<td rowspan=2>\n" \
-    "</td>\n" \
+    "<td></td>\n" \
     "</tr>\n" \
     "<tr></tr>\n" \
     "</table>\n" \
@@ -254,7 +257,9 @@
     "}\n" \
     "function xAxisTicks(value, index, ticks)\n" \
     "{\n" \
-    "return toTimebaseStrNS(index*HamegSetting.tba_nS);\n" \
+    "if (HamegSetting.general == undefined)\n" \
+    "return \".\";\n" \
+    "return toTimebaseStrNS(index*HamegSetting.general.tba_nS);\n" \
     "}\n" \
     "var WideView=false;\n" \
     "function toggleWideView()\n" \
@@ -322,17 +327,25 @@
     "\"<option value=\\\"AVR\\\">AVR</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
+    "function getOpModeSelector()\n" \
+    "{\n" \
+    "return (\"<select id=\\\"op_mode\\\" title=\\\"Select operation mode\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
+    "\"<option value=\\\"\\\"></option>\"+\n" \
+    "\"<option value=\\\"CHOP\\\">CHOP</option>\"+\n" \
+    "\"<option value=\\\"ADD\\\">ADD</option>\"+\n" \
+    "\"</select>\");\n" \
+    "}\n" \
     "function getPreTriggerSelector()\n" \
     "{\n" \
     "return (\"<select class=\\\"touch\\\" id=\\\"pre_trigger\\\" title=\\\"Select pre-trigger\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
-    "\"<option value=\\\"-75%\\\">-75%</option>\"+\n" \
-    "\"<option value=\\\"-50%\\\">-50%</option>\"+\n" \
-    "\"<option value=\\\"-25%\\\">-25%</option>\"+\n" \
-    "\"<option value=\\\"0%\\\">0%</option>\"+\n" \
-    "\"<option value=\\\"25%\\\">25%</option>\"+\n" \
-    "\"<option value=\\\"50%\\\">50%</option>\"+\n" \
-    "\"<option value=\\\"75%\\\">75%</option>\"+\n" \
-    "\"<option value=\\\"100%\\\">100%</option>\"+\n" \
+    "\"<option value=\\\"-75%\\\">PT -75%</option>\"+\n" \
+    "\"<option value=\\\"-50%\\\">PT -50%</option>\"+\n" \
+    "\"<option value=\\\"-25%\\\">PT -25%</option>\"+\n" \
+    "\"<option value=\\\"0%\\\">PT 0%</option>\"+\n" \
+    "\"<option value=\\\"25%\\\">PT 25%</option>\"+\n" \
+    "\"<option value=\\\"50%\\\">PT 50%</option>\"+\n" \
+    "\"<option value=\\\"75%\\\">PT 75%</option>\"+\n" \
+    "\"<option value=\\\"100%\\\">PT 100%</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
     "function getTriggerSourceSelector()\n" \
@@ -340,6 +353,7 @@
     "return (\"<select class=\\\"touch\\\" id=\\\"trigger_source\\\" title=\\\"Select trigger source\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
     "\"<option value=\\\"CH1\\\">CH1</option>\"+\n" \
     "\"<option value=\\\"CH2\\\">CH2</option>\"+\n" \
+    "\"<option value=\\\"CH1,CH2\\\">CH1/2 (ALT)</option>\"+\n" \
     "\"<option value=\\\"EXT\\\">EXT</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
@@ -353,6 +367,13 @@
     "\"<option value=\\\"TVLine\\\">TVL</option>\"+\n" \
     "\"<option value=\\\"TVField\\\">TVF</option>\"+\n" \
     "\"<option value=\\\"LINE\\\">LINE</option>\"+\n" \
+    "\"</select>\");\n" \
+    "}\n" \
+    "function getTriggerModeSelector()\n" \
+    "{\n" \
+    "return (\"<select class=\\\"touch\\\" id=\\\"trigger_mode\\\" title=\\\"Select normal or automatic trigger mode\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
+    "\"<option value=\\\"AUTO\\\">AUTO</option>\"+\n" \
+    "\"<option value=\\\"NORM\\\">NORM</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
     "function getReferenceSelector()\n" \
@@ -369,32 +390,38 @@
     "var MiddleRow = ScopeTable.rows[1];\n" \
     "var BottomRow = ScopeTable.rows[2];\n" \
     "GuiCells.DeviceID = TopRow.insertCell(0);\n" \
-    "GuiCells.Trigger = TopRow.insertCell(1);\n" \
+    "TopRow.insertCell(1);\n" \
     "GuiCells.Note = TopRow.insertCell(2);\n" \
     "GuiCells.Note.innerHTML = \"<textarea rows='2' cols='60' spellcheck='false' title='comments, notes, free text area...'></textarea>\";\n" \
-    "GuiCells.Note.colSpan = 2;\n" \
+    "GuiCells.Note.colSpan = 3;\n" \
     "GuiCells.Hold = TopRow.insertCell(3);\n" \
     "GuiCells.Hold.style.fontWeight = \"bold\";\n" \
     "GuiCells.Hold.style.fontSize = \"24px\";\n" \
     "GuiCells.ButtonsLeft = MiddleRow.cells[0];\n" \
     "GuiCells.ButtonsRight = MiddleRow.cells[2];\n" \
     "var wide = \"<button id=\\\"wide\\\" onclick=\\\"toggleWideView();\\\" title=\\\"Toggle wide display\\\">&#10231;</button>\";\n" \
-    "var autoset = '<button type=\"button\" id=\"autoset\" onclick=\"guiCallback(this);\" title=\\\"Automaticaly adapt oscilloscope settings to signals\\\">AUTOSET</button>';\n" \
     "var reset_single = '<button type=\"button\" id=\"reset_single\" onclick=\"guiCallback(this);\" title=\"Reset trigger (in single mode only)\">RES</button>';\n" \
     "var trigger_edge = '<button type=\"button\" id=\"trigger_edge\" onclick=\"guiCallback(this);\" title=\"Trigger on rising or falling edge\">TRIG &uarr;</button>';\n" \
     "var update = '<button type=\"button\" id=\"update\" onclick=\"updateData();\" title=\\\"Refresh display\\\">UPDATE</button>';\n" \
     "var ref = getReferenceSelector();\n" \
     "var hold = '<button type=\"button\" id=\"hold\" onclick=\"guiCallback({\\'id\\':\\'hold\\', \\'value\\':\\'0\\'});\" title=\\\"Hold current scope measurement data\\\">HOLD</button>';\n" \
-    "GuiCells.ButtonsRight.innerHTML = autoset+\"<br>\"+trigger_edge+\"<br>\"+getPreTriggerSelector()+\"<br>\"+getTriggerCouplingSelector()+\"<br>\"+getTriggerSourceSelector()+\"<br>\"+reset_single;\n" \
+    "GuiCells.ButtonsRight.innerHTML = (trigger_edge+\"<br>\"+getTriggerModeSelector()+\"<br>\"+getPreTriggerSelector()+\"<br>\"+\n" \
+    "getTriggerCouplingSelector()+\"<br>\"+getTriggerSourceSelector()+\"<br>\"+reset_single);\n" \
     "GuiCells.ButtonsLeft.innerHTML  = wide+\"<br>\"+hold+\"<br>\"+update+\"<br>\"+ref;\n" \
-    "GuiCells.Y1 = BottomRow.insertCell(0);\n" \
+    "BottomRow.insertCell(0);\n" \
+    "GuiCells.Y1 = BottomRow.insertCell(1);\n" \
     "GuiCells.Y1.innerHTML = \"<font id='ch_info1'></font>\"+getVoltageSelector(1);\n" \
-    "GuiCells.Y2 = BottomRow.insertCell(1);\n" \
+    "GuiCells.Y2 = BottomRow.insertCell(2);\n" \
     "GuiCells.Y2.innerHTML = \"<font id='ch_info2'></font>\"+getVoltageSelector(2);\n" \
-    "GuiCells.StoreMode = BottomRow.insertCell(2);\n" \
+    "GuiCells.OpMode = BottomRow.insertCell(3);\n" \
+    "GuiCells.OpMode.innerHTML = \"<font class='label'>OP</font><br>\"+getOpModeSelector();\n" \
+    "GuiCells.StoreMode = BottomRow.insertCell(4);\n" \
     "GuiCells.StoreMode.innerHTML = \"<font class='label'>Store Mode</font><br>\"+getStoreModeSelector();\n" \
-    "GuiCells.TDiv = BottomRow.insertCell(3);\n" \
+    "GuiCells.TDiv = BottomRow.insertCell(5);\n" \
     "GuiCells.TDiv.innerHTML = \"<font class='label'>T/DIV</font><br>\"+getTimeSelector();\n" \
+    "var autoset = '<button type=\"button\" id=\"autoset\" onclick=\"guiCallback(this);\" title=\\\"Automaticaly adapt oscilloscope settings to signals\\\">AUTOSET</button>';\n" \
+    "GuiCells.AutoSet = BottomRow.insertCell(6);\n" \
+    "GuiCells.AutoSet.innerHTML = \"<br>\"+autoset;\n" \
     "}\n" \
     "function updateData()\n" \
     "{\n" \
@@ -497,7 +524,7 @@
     "{\n" \
     "if (ChannelData != null)\n" \
     "{\n" \
-    "var TimebaseFactor = HamegSetting.tba_nS/XResolutionPerDiv*1e-9;\n" \
+    "var TimebaseFactor = HamegSetting.general.tba_nS/XResolutionPerDiv*1e-9;\n" \
     "var YFactor = 1.0/YResolutionPerDiv;\n" \
     "for (var i = 0; (i < ChannelData.length)&&(i < 2000); ++i)\n" \
     "{\n" \
@@ -586,7 +613,7 @@
     "else\n" \
     "if (element.id == \"time_div\")\n" \
     "{\n" \
-    "doRequest([\"TBA\", 0, \"timeDiv\", element.value, \"single\", HamegSetting.trigger.singleShot, \"zInput\", HamegSetting.zInput]);\n" \
+    "doRequest([\"TBA\", 0, \"timeDiv\", element.value, \"single\", HamegSetting.trigger.singleShot, \"zInput\", HamegSetting.general.zInput]);\n" \
     "}\n" \
     "else\n" \
     "if (element.id == \"autoset\")\n" \
@@ -601,8 +628,8 @@
     "else\n" \
     "if (element.id == \"hold\")\n" \
     "{\n" \
-    "HamegSetting.hold = 1-HamegSetting.hold;\n" \
-    "doRequest([\"HOLD\", HamegSetting.hold]);\n" \
+    "HamegSetting.trigger.hold = 1-HamegSetting.trigger.hold;\n" \
+    "doRequest([\"HOLD\", HamegSetting.trigger.hold]);\n" \
     "updateGuiElements();\n" \
     "}\n" \
     "else\n" \
@@ -625,11 +652,38 @@
     "((!HamegSetting.trigger.singleShot)&&(Value == \"SGL\")))\n" \
     "{\n" \
     "HamegSetting.trigger.singleShot = (Value == \"SGL\") ? 1 : 0;\n" \
-    "doRequest([\"TBA\", 0, \"timeDiv\", HamegSetting.tba, \"single\", HamegSetting.trigger.singleShot, \"zInput\", HamegSetting.zInput]);\n" \
+    "doRequest([\"TBA\", 0, \"timeDiv\", HamegSetting.general.tba, \"single\", HamegSetting.trigger.singleShot, \"zInput\", HamegSetting.zInput]);\n" \
     "}\n" \
     "if (Value != \"SGL\")\n" \
     "doRequest([\"STORE_MODE\", 0, \"mode\", Mode, \"preTrigger\", HamegSetting.trigger.preTrigger, \"ref1\", Ref1, \"ref2\", Ref2]);\n" \
     "}\n" \
+    "}\n" \
+    "else\n" \
+    "if ((element.id == \"op_mode\")||\n" \
+    "(element.id == \"trigger_source\"))\n" \
+    "{\n" \
+    "var Value = element.value;\n" \
+    "if (element.id == \"trigger_source\")\n" \
+    "{\n" \
+    "HamegSetting.trigger.source = Value;\n" \
+    "}\n" \
+    "else\n" \
+    "if (element.id == \"op_mode\")\n" \
+    "{\n" \
+    "if (Value == \"ADD\")\n" \
+    "{\n" \
+    "HamegSetting.general.add = 1;\n" \
+    "HamegSetting.general.chop = 0;\n" \
+    "}\n" \
+    "else\n" \
+    "if (Value == \"CHOP\")\n" \
+    "{\n" \
+    "HamegSetting.general.add = 0;\n" \
+    "HamegSetting.general.chop = 1;\n" \
+    "}\n" \
+    "}\n" \
+    "doRequest([\"VERTICAL_MODE\", 0, \"triggerSource\", HamegSetting.trigger.source, \"ch1_probe\", HamegSetting.ch1.probe, \"ch2_probe\", HamegSetting.ch2.probe,\n" \
+    "\"add\", HamegSetting.general.add, \"chop\", HamegSetting.general.chop, \"bwl\", HamegSetting.general.bwl]);\n" \
     "}\n" \
     "else\n" \
     "if (element.id == \"ref\")\n" \
@@ -644,10 +698,17 @@
     "}\n" \
     "else\n" \
     "if ((element.id == \"trigger_edge\")||\n" \
+    "(element.id == \"trigger_mode\")||\n" \
     "(element.id == \"trigger_coupling\"))\n" \
     "{\n" \
     "if (element.id == \"trigger_edge\")\n" \
     "HamegSetting.trigger.negative = 1-HamegSetting.trigger.negative;\n" \
+    "else\n" \
+    "if (element.id == \"trigger_mode\")\n" \
+    "{\n" \
+    "HamegSetting.trigger.norm = (element.value == \"NORM\") ? 1 : 0;\n" \
+    "}\n" \
+    "else\n" \
     "if (element.id == \"trigger_coupling\")\n" \
     "{\n" \
     "HamegSetting.trigger.coupling = element.value;\n" \
@@ -699,7 +760,7 @@
     "{\n" \
     "BlockGuiCallbacks = true;\n" \
     "document.getElementById(\"trigger_edge\").innerHTML = (HamegSetting.trigger.negative) ? \"TRIG &darr;\" : \"TRIG &uarr;\";\n" \
-    "document.getElementById(\"hold\").style.background = (HamegSetting.hold) ? \"red\" : \"\";\n" \
+    "document.getElementById(\"hold\").style.background = (HamegSetting.trigger.hold) ? \"red\" : \"\";\n" \
     "if (ConnectionError)\n" \
     "{\n" \
     "GuiCells.Hold.style.color = \"red\";\n" \
@@ -708,16 +769,23 @@
     "else\n" \
     "{\n" \
     "GuiCells.Hold.style.color = \"magenta\";\n" \
-    "GuiCells.Hold.innerHTML = (HamegSetting.hold) ? \"HOLD\" : \"\";\n" \
+    "GuiCells.Hold.innerHTML = (HamegSetting.trigger.hold) ? \"HOLD\" : \"\";\n" \
     "}\n" \
-    "var Title = HamegSetting.deviceId.split(\" \")[0];\n" \
+    "var Title = HamegSetting.id.device.split(\" \")[0];\n" \
     "document.title = Title;\n" \
     "GuiCells.DeviceID.innerHTML = \"<center><font color=#88f><b>\"+Title+\"</b></font></center>\";\n" \
+    "var TriggerMode = document.getElementById(\"trigger_mode\");\n" \
+    "TriggerMode.value = (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? \"NORM\" : \"AUTO\";\n" \
+    "TriggerMode.disabled = (HamegSetting.trigger.singleShot) ? 1 : 0;\n" \
     "document.getElementById(\"trigger_coupling\").value = HamegSetting.trigger.coupling;\n" \
     "document.getElementById(\"pre_trigger\").value = HamegSetting.trigger.preTrigger;\n" \
     "document.getElementById(\"trigger_source\").value = HamegSetting.trigger.source;\n" \
     "document.getElementById(\"store_mode\").value = HamegSetting.trigger.storeMode;\n" \
-    "document.getElementById(\"time_div\").value = HamegSetting.tba;\n" \
+    "document.getElementById(\"time_div\").value = HamegSetting.general.tba;\n" \
+    "var opMode = (HamegSetting.general.chop) ? \"CHOP\" : \"\";\n" \
+    "if (HamegSetting.general.add)\n" \
+    "opMode = \"ADD\";\n" \
+    "document.getElementById(\"op_mode\").value = opMode;\n" \
     "updateChInfo(1, HamegSetting.ch1);\n" \
     "updateChInfo(2, HamegSetting.ch2);\n" \
     "var ref = document.getElementById(\"ref\");\n" \
@@ -734,13 +802,11 @@
     "{\n" \
     "resetSingle.disabled = 0;\n" \
     "resetSingle.style.background = (HamegSetting.trigger.status == 2) ? \"#00b000\" : \"\";\n" \
-    "resetSingle.style.color = \"white\";\n" \
     "}\n" \
     "else\n" \
     "{\n" \
     "resetSingle.disabled = 1;\n" \
-    "resetSingle.style.background = \"#202020\";\n" \
-    "resetSingle.style.color = \"#808080\";\n" \
+    "resetSingle.style.background = \"\";\n" \
     "}\n" \
     "BlockGuiCallbacks = false;\n" \
     "}\n" \
@@ -757,10 +823,6 @@
     "return;\n" \
     "Y1Position = HamegSetting.ch1.yPosition/1000.0;\n" \
     "Y2Position = HamegSetting.ch2.yPosition/1000.0;\n" \
-    "var TriggerInfo = \"\";\n" \
-    "if (HamegSetting.trigger.norm)\n" \
-    "TriggerInfo += \"NORM\";\n" \
-    "GuiCells.Trigger.innerHTML = TriggerInfo;\n" \
     "var datasetChannel1 = {\n" \
     "label: 'Channel 1',\n" \
     "backgroundColor: \"red\",\n" \
@@ -816,6 +878,12 @@
     "};\n" \
     "if (HamegSetting.ch1.enabled)\n" \
     "{\n" \
+    "if (HamegSetting.general.add)\n" \
+    "{\n" \
+    "datasetChannel1.label = (HamegSetting.ch2.inverted) ? \"Channel 1 - Channel 2\" : \"Channel 1 + Channel 2\";\n" \
+    "datasetChannel1.backgroundColor = \"cyan\";\n" \
+    "datasetChannel1.borderColor = \"cyan\";\n" \
+    "}\n" \
     "var ch1  = convertWaveform(HamegSetting.data.channel1);\n" \
     "pushDataSet(ChartConfig, ch1, datasetChannel1);\n" \
     "}\n" \

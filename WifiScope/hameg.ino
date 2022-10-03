@@ -17,8 +17,8 @@
 */
 
 #include "hameg.h"
+#include "strings.h"
 
-extern const PROGMEM char* const VoltageStrings[];
 extern void bin2HexStr(const char* pData, UInt32 Size, std::string& str);
 
 #ifdef DEBUG
@@ -244,6 +244,29 @@ bool Hameg::setTrigger(UInt8 FallingEdge, UInt8 PeakPeak, UInt8 Norm, UInt8 Coup
   Coupling &= 0x7;
   Buf[5] = FallingEdge|PeakPeak|Norm|Coupling;
   if (!_command(6, Buf, 3, NULL, 1000))
+    return false;
+  return true;
+}
+
+bool Hameg::setVerticalMode(UInt8 AltTrigger, UInt8 Ch1_10_1, UInt8 Ch2_10_1, UInt8 Bwl, UInt8 Chop, UInt8 Add, UInt8 TriggerSource)
+{
+  char Buf[10];
+  sprintf(Buf, "VERMODE=X");
+  if (AltTrigger)
+    AltTrigger = 0x80;
+  if (Ch1_10_1)
+    Ch1_10_1 = 0x40;
+  if (Ch2_10_1)
+    Ch2_10_1 = 0x4;
+  if (Bwl)
+    Bwl = 0x20;
+  if (Chop)
+    Chop = 0x10;
+  if (Add)
+    Add = 0x08;
+  TriggerSource &= 3;
+  Buf[8] = AltTrigger | Ch1_10_1 | Ch2_10_1 | Bwl | Chop | Add | TriggerSource;
+  if (!_command(9, Buf, 3, NULL, 1000))
     return false;
   return true;
 }
@@ -536,64 +559,33 @@ bool triggerDDF2json(UInt8* pDDF, UInt16* pDDF1, UInt8 TriggerStatus, UInt8 Hold
   UInt8 Add  = (b & 0x08)>0;
   UInt8 Chop = (b & 0x10)>0;
   UInt8 BWL  = (b & 0x20)>0;
-  UInt8 AltTrig = (b & 0x80)>0;
+  UInt8 AltTrigger = (b & 0x80)>0; // alternating CH1,CH2
   UInt8 SingleShot = (pDDF[3] & 0x20)>0;
   UInt8 ZInput = (pDDF[3] & 0x80)>0;
+
   UInt8 TBA = pDDF[3] & 0x1f;
   ULong64 TBA_nS = hameg_nS(TBA);
 
-  // Trigger Source
-  const char* pTriggerSrc;
-  if (AltTrig)
-    pTriggerSrc = "CH1,CH2"; // alternating trigger source
-  else
-  switch(b&0x3)
-  {
-    case 0x0:
-      pTriggerSrc = "CH1";
-      break;
-    case 0x1:
-      pTriggerSrc = "CH2";
-      break;
-    default:
-      pTriggerSrc = "EXT";
-      break;
-  }
+  UInt8 TriggerSource = (AltTrigger) ? 0x4 : (b&0x3);
+  const char* pTriggerSrc = TriggerSrcStrings[TriggerSource];
 
   // TRIG byte
   b = pDDF[6];
-  const char* pTriggerType;
-  switch(b&7)
-  {
-    case 0:pTriggerType="AC";break;
-    case 1:pTriggerType="DC";break;
-    case 2:pTriggerType="HF";break;
-    case 3:pTriggerType="LF";break;
-    case 4:pTriggerType="TVLine";break;
-    case 5:pTriggerType="TVField";break;
-    case 6:pTriggerType="LINE";break;
-    case 7:pTriggerType="?";break;
-  }
+  
+  UInt8 TriggerType = b&7;
+  const char* pTriggerType = CouplingStrings[TriggerType];
+
   UInt8 Norm     = (b & 0x10)>0;
   UInt8 PeakPeak = (b & 0x20)>0;
   UInt8 Negative = (b & 0x80)>0;
 
   // STRMODE byte
   b = pDDF[7];
-  const char* pStoreMode="";
-  switch(b & 7)
-  {
-    case 0:pStoreMode = "RFR";break;
-    case 1:pStoreMode = "SGL";break;
-    case 2:pStoreMode = "ROL";break;
-    case 3:pStoreMode = "ENV";break;
-    case 4:pStoreMode = "AVR";break;
-    case 5:pStoreMode = "?5?";break;
-    case 6:pStoreMode = "?6?";break;
-    case 7:pStoreMode = "?7?";break;
-  }
+
+  UInt8 StoreMode = b&7;
   if (SingleShot)
-    pStoreMode = "SGL";
+    StoreMode = 1; // display "SGL";
+  const char* pStoreMode = StoreModeStrings[StoreMode];
 
   UInt8 PreTrigger = (b>>3)&0x7;
   Int8 PreTriggerP = -75;
@@ -727,7 +719,12 @@ bool Hameg::getJSONData(std::string& json)
       HaveData = true;
     }
 
-    if (DDF[1] & 0x10) // CH2 enabled?
+    UInt8 Add  = (DDF[2] & 0x08)>0;
+
+    // CH2 enabled, but not ADD)?
+    // (when channels are ADDed, then CH1 contains the valid sum)
+    if ((DDF[1] & 0x10)&&
+        (!Add))
     {
       if (HaveData)
         json.append("," JSON_LF);

@@ -18,48 +18,8 @@
 
 #include "webserver.h"
 #include "hameg.h"
-#include "resource.h"
+#include "strings.h"
 #include <ESP8266WebServer.h>
-
-/***********************************************************************/
-/* string constants (in program memory to save RAM)                    */
-/***********************************************************************/
-const PROGMEM char File_ControlJS[]  = HAMEGCONTROL_JS;
-const PROGMEM char File_IndexHTML[]  = INDEX_HTML;
-const PROGMEM char File_FaviconPNG[] = FAVICON_PNG;
-const PROGMEM char MimeTypeHtml[]    = "text/html";
-const PROGMEM char MimeTypePlain[]   = "text/plain";
-const PROGMEM char MimeTypeCsv[]     = "text/csv";
-const PROGMEM char MimeTypePNG[]     = "image/png";
-const PROGMEM char MimeTypeJS[]      = "application/javascript";
-const PROGMEM char MimeTypeJSON[]    = "application/json";
-
-/***********************************************************************/
-/* string arrays (in program memory to save RAM)                       */
-/***********************************************************************/
-
-const PROGMEM char* const StoreModeStrings[] = {
-  "REF", "SGL", "ROL", "ENV", "AVR",
-  NULL
-};
-
-const PROGMEM char* const CouplingStrings[] = {
-  "AC", "DC", "HF", "LF", "TVLine", "TVField", "LINE",
-  NULL
-};
-
-const PROGMEM char* const PreTriggerStrings[] = {
-  "-75%", "-50%", "-25%", "0%",
-  "25%", "50%", "75%", "100%",
-  NULL
-};
-
-const PROGMEM char* const VoltageStrings[] = {
-  "10mV", "20mV", "50mV", "100mV", "200mV", "500mV",
-  "1V", "2V", "5V", "10V", "20V", "50V", "100V",
-  "200V",
-  NULL
-};
 
 /***********************************************************************/
 /* global variables                                                    */
@@ -72,11 +32,12 @@ static ESP8266WebServer* g_pWebServer = NULL;
 /***********************************************************************/
 
 // map a string to the index of a matching string array element
-static UInt8 mapString(const char* Needle, const char* const StringArray[], UInt8 Default=0)
+static UInt8 mapString(const String& Needle, const char* const StringArray[], UInt8 Default=0)
 {
+  const char* pNeedle = Needle.c_str();
   for (UInt8 i=0;StringArray[i]!=NULL;i++)
   {
-    if (0 == strcmp(Needle, StringArray[i]))
+    if (0 == strcmp(pNeedle, StringArray[i]))
        return i;
   }
   return Default;
@@ -165,7 +126,7 @@ void handle_Set()
         UInt8 AC          = getParameterInt("ac", 0);
         UInt8 GND         = getParameterInt("gnd", 0);
         UInt8 Inverted    = getParameterInt("inverted", 0);
-        UInt8 VoltDiv     = mapString(VoltDivStr.c_str(), VoltageStrings);
+        UInt8 VoltDiv     = mapString(VoltDivStr, VoltageStrings);
         Ok = g_pHameg->setCH(Value, VoltDiv, Enabled, AC, Inverted, GND);
       }
       else
@@ -184,10 +145,32 @@ void handle_Set()
         UInt8 Ref1        = getParameterInt("ref1", 0);
         UInt8 Ref2        = getParameterInt("ref2", 0);
         
-        UInt8 StoreMode  = mapString(ModeStr.c_str(), StoreModeStrings);
-        UInt8 PreTrigger = mapString(PreTrigStr.c_str(), PreTriggerStrings, 3);
+        UInt8 StoreMode  = mapString(ModeStr, StoreModeStrings);
+        UInt8 PreTrigger = mapString(PreTrigStr, PreTriggerStrings, 3);
 
         Ok = g_pHameg->setStoreMode(StoreMode, PreTrigger, Ref1, Ref2);
+      }
+      else
+      if (ParamName == "VERTICAL_MODE")
+      {
+        String TriggerSrc  = g_pWebServer->arg("triggerSource");
+        UInt8 TriggerSource = mapString(TriggerSrc, TriggerSrcStrings);
+        UInt8 AltTrigger   = 0; 
+        if (TriggerSource == 0x4)
+        {
+          // alternating trigger source (CH1/CH2)
+          TriggerSource = 0;
+          AltTrigger = 1;
+        }
+        String Ch1ProbeStr = g_pWebServer->arg("ch1_probe");
+        String Ch2ProbeStr = g_pWebServer->arg("ch2_probe");
+        UInt8 Ch1_10_1     = mapString(Ch1ProbeStr, ProbeStrings);
+        UInt8 Ch2_10_1     = mapString(Ch2ProbeStr, ProbeStrings);
+        UInt8 Add          = getParameterInt("add", 0);
+        UInt8 Chop         = getParameterInt("chop", 0);
+        UInt8 Bwl          = getParameterInt("bwl", 0);
+
+        Ok = g_pHameg->setVerticalMode(AltTrigger, Ch1_10_1, Ch2_10_1, Bwl, Chop, Add, TriggerSource);
       }
       else
       if (ParamName == "TRIGGER")
@@ -197,7 +180,7 @@ void handle_Set()
         UInt8 Norm         = getParameterInt("norm", 0);
         UInt8 FallingEdge  = getParameterInt("negative", 0);
 
-        UInt8 Coupling     = mapString(CouplingStr.c_str(), CouplingStrings, 1);
+        UInt8 Coupling     = mapString(CouplingStr, CouplingStrings, 1);
 
         Ok = g_pHameg->setTrigger(FallingEdge, PeakPeak, Norm, Coupling);
       }
