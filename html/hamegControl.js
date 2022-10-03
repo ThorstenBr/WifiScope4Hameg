@@ -57,6 +57,24 @@ function toTimebaseStrNS(v)
 	return ""+v+"s";
 }
 
+// avoid flickering due to unnecessary HTML updates
+function updateHtml(element, text)
+{
+	if ((element.rawHTML == undefined)||
+	    (element.innerHTML != text))
+	{
+		element.rawHTML = text;
+		element.innerHTML = text;
+	}
+}
+
+// avoid uncessary "change" callbacks
+function updateValue(element, value)
+{
+	if (element.value != value)
+		element.value = value;
+}
+
 // custom callback for plotter x-axis labels
 function xAxisTicks(value, index, ticks)
 {
@@ -128,10 +146,10 @@ function getTimeSelector()
 function getStoreModeSelector()
 {
 	return ("<select id=\"store_mode\" title=\"Select storage mode\" onchange=\"guiCallback(this)\">"+
-		"<option value=\"RFR\">RFR</option>"+
+		"<option value=\"RFR\">REFRESH</option>"+
 		"<option value=\"SGL\">SINGLE</option>"+
-		"<option value=\"ROL\">ROLLING</option>"+
-		"<option value=\"ENV\">ENVELP</option>"+
+		"<option value=\"ROL\">ROLL</option>"+
+		"<option value=\"ENV\">ENVELOPE</option>"+
 		"<option value=\"AVR\">AVERAGE</option>"+
 		"</select>");
 }
@@ -209,7 +227,7 @@ function addGuiElements(ScopeTable)
 	GuiCells.DeviceID = TopRow.insertCell(0);
 	TopRow.insertCell(1);
 	GuiCells.Note = TopRow.insertCell(2);
-	GuiCells.Note.innerHTML = "<textarea rows='2' cols='60' spellcheck='false' title='comments, notes, free text area...'></textarea>";
+	updateHtml(GuiCells.Note, "<textarea rows='2' cols='60' spellcheck='false' title='comments, notes, free text area...'></textarea>");
 	GuiCells.Note.colSpan = 3;
 
 	// top-right
@@ -228,28 +246,28 @@ function addGuiElements(ScopeTable)
 	var ref = getReferenceSelector();
 	var hold = '<button type="button" id="hold" onclick="guiCallback({\'id\':\'hold\', \'value\':\'0\'});" title=\"Hold current scope measurement data\">HOLD</button>';
 
-	GuiCells.ButtonsRight.innerHTML = (trigger_edge+"<br>"+getTriggerModeSelector()+"<br>"+getPreTriggerSelector()+"<br>"+
-	                                   getTriggerCouplingSelector()+"<br>"+getTriggerSourceSelector()+"<br>"+reset_single);
-	GuiCells.ButtonsLeft.innerHTML  = wide+"<br>"+hold+"<br>"+update+"<br>"+ref;
+	updateHtml(GuiCells.ButtonsRight, (trigger_edge+"<br>"+getTriggerModeSelector()+"<br>"+getPreTriggerSelector()+"<br>"+
+	                                   getTriggerCouplingSelector()+"<br>"+getTriggerSourceSelector()+"<br>"+reset_single));
+	updateHtml(GuiCells.ButtonsLeft, wide+"<br>"+hold+"<br>"+update+"<br>"+ref);
 
 	BottomRow.insertCell(0);
 	GuiCells.Y1 = BottomRow.insertCell(1);
-	GuiCells.Y1.innerHTML = "<font id='ch_info1'></font>"+getVoltageSelector(1);
+	updateHtml(GuiCells.Y1, "<font id='ch_info1'></font>"+getVoltageSelector(1));
 	GuiCells.Y2 = BottomRow.insertCell(2);
-	GuiCells.Y2.innerHTML = "<font id='ch_info2'></font>"+getVoltageSelector(2);
+	updateHtml(GuiCells.Y2, "<font id='ch_info2'></font>"+getVoltageSelector(2));
 
 	GuiCells.OpMode = BottomRow.insertCell(3);
-	GuiCells.OpMode.innerHTML = "<font class='label'>OP</font><br>"+getOpModeSelector();
+	updateHtml(GuiCells.OpMode, "<font class='label'>OP</font><br>"+getOpModeSelector());
 
 	GuiCells.StoreMode = BottomRow.insertCell(4);
-	GuiCells.StoreMode.innerHTML = "<font class='label'>Store Mode</font><br>"+getStoreModeSelector();
+	updateHtml(GuiCells.StoreMode, "<font class='label'>Store Mode</font><br>"+getStoreModeSelector());
 
 	GuiCells.TDiv = BottomRow.insertCell(5);
-	GuiCells.TDiv.innerHTML = "<font class='label'>T/DIV</font><br>"+getTimeSelector();
+	updateHtml(GuiCells.TDiv, "<font class='label'>T/DIV</font><br>"+getTimeSelector());
 	
 	var autoset = '<button type="button" id="autoset" onclick="guiCallback(this);" title=\"Automaticaly adapt oscilloscope settings to signals\">AUTOSET</button>'; 
 	GuiCells.AutoSet = BottomRow.insertCell(6);
-	GuiCells.AutoSet.innerHTML = "<br>"+autoset;
+	updateHtml(GuiCells.AutoSet, "<br>"+autoset);
 
 	GuiCells.ErrorMessage = BottomRow2.insertCell(0);
 	GuiCells.ErrorMessage.colSpan = 5;
@@ -326,13 +344,21 @@ function DynamicLoader(Url, Chart)
 	this.Client.dynLoader = this;
 }
 
-DynamicLoader.prototype.callback = function()
+
+DynamicLoader.prototype.callback = function(msg)
 {
+	if (msg === "timeout")
+	{
+		processData(Charts[0], null, "timeout");
+	}
+	else
 	if (this.Client.readyState == 4)
 	{
 		var TextData = this.Client.responseText;
 		this.Active = 0;
 		ConnectionError = (this.Client.status != 200);
+		if (this.Client.status==0)
+			TextData = "ERROR: Unable to communicate with host or IP address.";
 		var ErrorMessage = null;
 		if (ConnectionError)
 		{
@@ -350,7 +376,8 @@ DynamicLoader.prototype.load = function(cb)
 	this.Active = 1;
 	this.Client.open("GET", this.Url+"/data?nocache="+timeNow());
 	this.Client.timeout = 4000;
-	this.Client.onreadystatechange = function() {this.dynLoader.callback();};
+	this.Client.onreadystatechange = function() {this.dynLoader.callback("ready");};
+	this.Client.ontimeout = function() {this.dynLoader.callback("timeout");};
 	this.Client.send(null);
 };
 
@@ -538,6 +565,12 @@ function guiCallback(element)
 				HamegSetting.general.add = 0;
 				HamegSetting.general.chop = 1;
 			}
+			else
+			if (Value == "")
+			{
+				updateGuiElements();
+				return;
+			}
 		}
 		doRequest(["VERTICAL_MODE", 0, "triggerSource", HamegSetting.trigger.source, "ch1_probe", HamegSetting.ch1.probe, "ch2_probe", HamegSetting.ch2.probe,
 			   "add", HamegSetting.general.add, "chop", HamegSetting.general.chop, "bwl", HamegSetting.general.bwl]);
@@ -612,13 +645,13 @@ function updateChInfo(ChannelId, chObj)
 
 	if (chObj.enabled)
 	{
-		document.getElementById("ch_info"+ChannelId).innerHTML = "<b>"+Info+"</b>"+Probe;
-		document.getElementById("ch"+ChannelId+"VoltDiv").value = ChVoltage;
+		updateHtml(document.getElementById("ch_info"+ChannelId), "<b>"+Info+"</b>"+Probe);
+		updateValue(document.getElementById("ch"+ChannelId+"VoltDiv"), ChVoltage);
 	}
 	else
 	{
-		document.getElementById("ch_info"+ChannelId).innerHTML = "<font color='#505050'>"+Info+"</font>"+Probe;
-		document.getElementById("ch"+ChannelId+"VoltDiv").value = "OFF";
+		updateHtml(document.getElementById("ch_info"+ChannelId), "<font color='#505050'>"+Info+"</font>"+Probe);
+		updateValue(document.getElementById("ch"+ChannelId+"VoltDiv"), "OFF");
 	}
 }
 
@@ -626,32 +659,31 @@ function updateGuiElements()
 {
 	BlockGuiCallbacks = true;
 
-	document.getElementById("trigger_edge").innerHTML = (HamegSetting.trigger.negative) ? "TRIG &darr;" : "TRIG &uarr;";
+	updateValue(document.getElementById("trigger_edge"), (HamegSetting.trigger.negative) ? "TRIG &darr;" : "TRIG &uarr;");
 
 	document.getElementById("hold").style.background = (HamegSetting.trigger.hold) ? "red" : "";
 
 	var Title = HamegSetting.id.device.split(" ")[0];
 	document.title = Title;
-	GuiCells.DeviceID.innerHTML = "<center><font color=#88f><b>"+Title+"</b></font></center>";
+	updateHtml(GuiCells.DeviceID, "<center><font color=#88f><b>"+Title+"</b></font></center>");
 
 	var TriggerMode = document.getElementById("trigger_mode");
-	TriggerMode.value = (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? "NORM" : "AUTO";
+	updateValue(TriggerMode, (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? "NORM" : "AUTO");
 	TriggerMode.disabled = (HamegSetting.trigger.singleShot) ? 1 : 0;
 
-	document.getElementById("trigger_coupling").value = HamegSetting.trigger.coupling;
-	document.getElementById("pre_trigger").value = HamegSetting.trigger.preTrigger;
-	document.getElementById("trigger_source").value = HamegSetting.trigger.source;
-
-	document.getElementById("store_mode").value = HamegSetting.trigger.storeMode;
-	document.getElementById("time_div").value = HamegSetting.general.tba;
+	updateValue(document.getElementById("trigger_coupling"), HamegSetting.trigger.coupling);
+	updateValue(document.getElementById("pre_trigger"), HamegSetting.trigger.preTrigger);
+	updateValue(document.getElementById("trigger_source"), HamegSetting.trigger.source);
+	updateValue(document.getElementById("store_mode"), HamegSetting.trigger.storeMode);
+	updateValue(document.getElementById("time_div"), HamegSetting.general.tba);
 
 	GuiCells.Hold.style.color = "magenta";
-	GuiCells.Hold.innerHTML = (HamegSetting.trigger.hold) ? "HOLD" : "";
+	updateHtml(GuiCells.Hold, (HamegSetting.trigger.hold) ? "HOLD" : "");
 
 	var opMode = (HamegSetting.general.chop) ? "CHOP" : "";
 	if (HamegSetting.general.add)
 		opMode = "ADD";
-	document.getElementById("op_mode").value = opMode;
+	updateValue(document.getElementById("op_mode"), opMode);
 
 	// update details on channel 1+2
 	updateChInfo(1, HamegSetting.ch1);
@@ -660,11 +692,11 @@ function updateGuiElements()
 	var ref = document.getElementById("ref");
 	if ((HamegSetting.data.reference1 === undefined)&&(HamegSetting.data.reference2 === undefined))
 	{
-		ref.value = "NO REF";
+		updateValue(ref, "NO REF");
 	}
 	else
 	{
-		ref.value = (HamegSetting.data.reference2 === undefined) ? "REF1" : "REF2";
+		updateValue(ref, (HamegSetting.data.reference2 === undefined) ? "REF1" : "REF2");
 	}
 
 	var resetSingle = document.getElementById("reset_single");
@@ -695,8 +727,11 @@ function processData(ChartObj, Json, ErrorMessage)
 	if (ErrorMessage != null)
 	{
 		GuiCells.Hold.style.color = "red";
-		GuiCells.Hold.innerHTML = "NO CONNECTION";
-		GuiCells.ErrorMessage.innerHTML = ErrorMessage;
+		if (ErrorMessage === "timeout")
+			updateHtml(GuiCells.Hold, "NO CONNECTION");
+		else
+			updateHtml(GuiCells.Hold, "COMM ERROR");
+		updateHtml(GuiCells.ErrorMessage, ErrorMessage);
 		return;
 	}
 

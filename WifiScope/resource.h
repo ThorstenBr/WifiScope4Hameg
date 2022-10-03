@@ -255,6 +255,20 @@
     "v /= 1000;\n" \
     "return \"\"+v+\"s\";\n" \
     "}\n" \
+    "function updateHtml(element, text)\n" \
+    "{\n" \
+    "if ((element.rawHTML == undefined)||\n" \
+    "(element.innerHTML != text))\n" \
+    "{\n" \
+    "element.rawHTML = text;\n" \
+    "element.innerHTML = text;\n" \
+    "}\n" \
+    "}\n" \
+    "function updateValue(element, value)\n" \
+    "{\n" \
+    "if (element.value != value)\n" \
+    "element.value = value;\n" \
+    "}\n" \
     "function xAxisTicks(value, index, ticks)\n" \
     "{\n" \
     "if (HamegSetting.general == undefined)\n" \
@@ -320,10 +334,10 @@
     "function getStoreModeSelector()\n" \
     "{\n" \
     "return (\"<select id=\\\"store_mode\\\" title=\\\"Select storage mode\\\" onchange=\\\"guiCallback(this)\\\">\"+\n" \
-    "\"<option value=\\\"RFR\\\">RFR</option>\"+\n" \
+    "\"<option value=\\\"RFR\\\">REFRESH</option>\"+\n" \
     "\"<option value=\\\"SGL\\\">SINGLE</option>\"+\n" \
-    "\"<option value=\\\"ROL\\\">ROLLING</option>\"+\n" \
-    "\"<option value=\\\"ENV\\\">ENVELP</option>\"+\n" \
+    "\"<option value=\\\"ROL\\\">ROLL</option>\"+\n" \
+    "\"<option value=\\\"ENV\\\">ENVELOPE</option>\"+\n" \
     "\"<option value=\\\"AVR\\\">AVERAGE</option>\"+\n" \
     "\"</select>\");\n" \
     "}\n" \
@@ -393,7 +407,7 @@
     "GuiCells.DeviceID = TopRow.insertCell(0);\n" \
     "TopRow.insertCell(1);\n" \
     "GuiCells.Note = TopRow.insertCell(2);\n" \
-    "GuiCells.Note.innerHTML = \"<textarea rows='2' cols='60' spellcheck='false' title='comments, notes, free text area...'></textarea>\";\n" \
+    "updateHtml(GuiCells.Note, \"<textarea rows='2' cols='60' spellcheck='false' title='comments, notes, free text area...'></textarea>\");\n" \
     "GuiCells.Note.colSpan = 3;\n" \
     "GuiCells.Hold = TopRow.insertCell(3);\n" \
     "GuiCells.Hold.style.fontWeight = \"bold\";\n" \
@@ -406,23 +420,23 @@
     "var update = '<button type=\"button\" id=\"update\" onclick=\"updateData();\" title=\\\"Refresh display\\\">UPDATE</button>';\n" \
     "var ref = getReferenceSelector();\n" \
     "var hold = '<button type=\"button\" id=\"hold\" onclick=\"guiCallback({\\'id\\':\\'hold\\', \\'value\\':\\'0\\'});\" title=\\\"Hold current scope measurement data\\\">HOLD</button>';\n" \
-    "GuiCells.ButtonsRight.innerHTML = (trigger_edge+\"<br>\"+getTriggerModeSelector()+\"<br>\"+getPreTriggerSelector()+\"<br>\"+\n" \
-    "getTriggerCouplingSelector()+\"<br>\"+getTriggerSourceSelector()+\"<br>\"+reset_single);\n" \
-    "GuiCells.ButtonsLeft.innerHTML  = wide+\"<br>\"+hold+\"<br>\"+update+\"<br>\"+ref;\n" \
+    "updateHtml(GuiCells.ButtonsRight, (trigger_edge+\"<br>\"+getTriggerModeSelector()+\"<br>\"+getPreTriggerSelector()+\"<br>\"+\n" \
+    "getTriggerCouplingSelector()+\"<br>\"+getTriggerSourceSelector()+\"<br>\"+reset_single));\n" \
+    "updateHtml(GuiCells.ButtonsLeft, wide+\"<br>\"+hold+\"<br>\"+update+\"<br>\"+ref);\n" \
     "BottomRow.insertCell(0);\n" \
     "GuiCells.Y1 = BottomRow.insertCell(1);\n" \
-    "GuiCells.Y1.innerHTML = \"<font id='ch_info1'></font>\"+getVoltageSelector(1);\n" \
+    "updateHtml(GuiCells.Y1, \"<font id='ch_info1'></font>\"+getVoltageSelector(1));\n" \
     "GuiCells.Y2 = BottomRow.insertCell(2);\n" \
-    "GuiCells.Y2.innerHTML = \"<font id='ch_info2'></font>\"+getVoltageSelector(2);\n" \
+    "updateHtml(GuiCells.Y2, \"<font id='ch_info2'></font>\"+getVoltageSelector(2));\n" \
     "GuiCells.OpMode = BottomRow.insertCell(3);\n" \
-    "GuiCells.OpMode.innerHTML = \"<font class='label'>OP</font><br>\"+getOpModeSelector();\n" \
+    "updateHtml(GuiCells.OpMode, \"<font class='label'>OP</font><br>\"+getOpModeSelector());\n" \
     "GuiCells.StoreMode = BottomRow.insertCell(4);\n" \
-    "GuiCells.StoreMode.innerHTML = \"<font class='label'>Store Mode</font><br>\"+getStoreModeSelector();\n" \
+    "updateHtml(GuiCells.StoreMode, \"<font class='label'>Store Mode</font><br>\"+getStoreModeSelector());\n" \
     "GuiCells.TDiv = BottomRow.insertCell(5);\n" \
-    "GuiCells.TDiv.innerHTML = \"<font class='label'>T/DIV</font><br>\"+getTimeSelector();\n" \
+    "updateHtml(GuiCells.TDiv, \"<font class='label'>T/DIV</font><br>\"+getTimeSelector());\n" \
     "var autoset = '<button type=\"button\" id=\"autoset\" onclick=\"guiCallback(this);\" title=\\\"Automaticaly adapt oscilloscope settings to signals\\\">AUTOSET</button>';\n" \
     "GuiCells.AutoSet = BottomRow.insertCell(6);\n" \
-    "GuiCells.AutoSet.innerHTML = \"<br>\"+autoset;\n" \
+    "updateHtml(GuiCells.AutoSet, \"<br>\"+autoset);\n" \
     "GuiCells.ErrorMessage = BottomRow2.insertCell(0);\n" \
     "GuiCells.ErrorMessage.colSpan = 5;\n" \
     "}\n" \
@@ -486,13 +500,20 @@
     "this.Client = getRequestObject();\n" \
     "this.Client.dynLoader = this;\n" \
     "}\n" \
-    "DynamicLoader.prototype.callback = function()\n" \
+    "DynamicLoader.prototype.callback = function(msg)\n" \
     "{\n" \
+    "if (msg === \"timeout\")\n" \
+    "{\n" \
+    "processData(Charts[0], null, \"timeout\");\n" \
+    "}\n" \
+    "else\n" \
     "if (this.Client.readyState == 4)\n" \
     "{\n" \
     "var TextData = this.Client.responseText;\n" \
     "this.Active = 0;\n" \
     "ConnectionError = (this.Client.status != 200);\n" \
+    "if (this.Client.status==0)\n" \
+    "TextData = \"ERROR: Unable to communicate with host or IP address.\";\n" \
     "var ErrorMessage = null;\n" \
     "if (ConnectionError)\n" \
     "{\n" \
@@ -509,7 +530,8 @@
     "this.Active = 1;\n" \
     "this.Client.open(\"GET\", this.Url+\"/data?nocache=\"+timeNow());\n" \
     "this.Client.timeout = 4000;\n" \
-    "this.Client.onreadystatechange = function() {this.dynLoader.callback();};\n" \
+    "this.Client.onreadystatechange = function() {this.dynLoader.callback(\"ready\");};\n" \
+    "this.Client.ontimeout = function() {this.dynLoader.callback(\"timeout\");};\n" \
     "this.Client.send(null);\n" \
     "};\n" \
     "function convertWaveform(StrData)\n" \
@@ -686,6 +708,12 @@
     "HamegSetting.general.add = 0;\n" \
     "HamegSetting.general.chop = 1;\n" \
     "}\n" \
+    "else\n" \
+    "if (Value == \"\")\n" \
+    "{\n" \
+    "updateGuiElements();\n" \
+    "return;\n" \
+    "}\n" \
     "}\n" \
     "doRequest([\"VERTICAL_MODE\", 0, \"triggerSource\", HamegSetting.trigger.source, \"ch1_probe\", HamegSetting.ch1.probe, \"ch2_probe\", HamegSetting.ch2.probe,\n" \
     "\"add\", HamegSetting.general.add, \"chop\", HamegSetting.general.chop, \"bwl\", HamegSetting.general.bwl]);\n" \
@@ -752,47 +780,47 @@
     "var Probe = \" <font color='#505050' id='probe\"+ChannelId+\"'>\"+chObj.probe+\"</font><br>\";\n" \
     "if (chObj.enabled)\n" \
     "{\n" \
-    "document.getElementById(\"ch_info\"+ChannelId).innerHTML = \"<b>\"+Info+\"</b>\"+Probe;\n" \
-    "document.getElementById(\"ch\"+ChannelId+\"VoltDiv\").value = ChVoltage;\n" \
+    "updateHtml(document.getElementById(\"ch_info\"+ChannelId), \"<b>\"+Info+\"</b>\"+Probe);\n" \
+    "updateValue(document.getElementById(\"ch\"+ChannelId+\"VoltDiv\"), ChVoltage);\n" \
     "}\n" \
     "else\n" \
     "{\n" \
-    "document.getElementById(\"ch_info\"+ChannelId).innerHTML = \"<font color='#505050'>\"+Info+\"</font>\"+Probe;\n" \
-    "document.getElementById(\"ch\"+ChannelId+\"VoltDiv\").value = \"OFF\";\n" \
+    "updateHtml(document.getElementById(\"ch_info\"+ChannelId), \"<font color='#505050'>\"+Info+\"</font>\"+Probe);\n" \
+    "updateValue(document.getElementById(\"ch\"+ChannelId+\"VoltDiv\"), \"OFF\");\n" \
     "}\n" \
     "}\n" \
     "function updateGuiElements()\n" \
     "{\n" \
     "BlockGuiCallbacks = true;\n" \
-    "document.getElementById(\"trigger_edge\").innerHTML = (HamegSetting.trigger.negative) ? \"TRIG &darr;\" : \"TRIG &uarr;\";\n" \
+    "updateValue(document.getElementById(\"trigger_edge\"), (HamegSetting.trigger.negative) ? \"TRIG &darr;\" : \"TRIG &uarr;\");\n" \
     "document.getElementById(\"hold\").style.background = (HamegSetting.trigger.hold) ? \"red\" : \"\";\n" \
     "var Title = HamegSetting.id.device.split(\" \")[0];\n" \
     "document.title = Title;\n" \
-    "GuiCells.DeviceID.innerHTML = \"<center><font color=#88f><b>\"+Title+\"</b></font></center>\";\n" \
+    "updateHtml(GuiCells.DeviceID, \"<center><font color=#88f><b>\"+Title+\"</b></font></center>\");\n" \
     "var TriggerMode = document.getElementById(\"trigger_mode\");\n" \
-    "TriggerMode.value = (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? \"NORM\" : \"AUTO\";\n" \
+    "updateValue(TriggerMode, (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? \"NORM\" : \"AUTO\");\n" \
     "TriggerMode.disabled = (HamegSetting.trigger.singleShot) ? 1 : 0;\n" \
-    "document.getElementById(\"trigger_coupling\").value = HamegSetting.trigger.coupling;\n" \
-    "document.getElementById(\"pre_trigger\").value = HamegSetting.trigger.preTrigger;\n" \
-    "document.getElementById(\"trigger_source\").value = HamegSetting.trigger.source;\n" \
-    "document.getElementById(\"store_mode\").value = HamegSetting.trigger.storeMode;\n" \
-    "document.getElementById(\"time_div\").value = HamegSetting.general.tba;\n" \
+    "updateValue(document.getElementById(\"trigger_coupling\"), HamegSetting.trigger.coupling);\n" \
+    "updateValue(document.getElementById(\"pre_trigger\"), HamegSetting.trigger.preTrigger);\n" \
+    "updateValue(document.getElementById(\"trigger_source\"), HamegSetting.trigger.source);\n" \
+    "updateValue(document.getElementById(\"store_mode\"), HamegSetting.trigger.storeMode);\n" \
+    "updateValue(document.getElementById(\"time_div\"), HamegSetting.general.tba);\n" \
     "GuiCells.Hold.style.color = \"magenta\";\n" \
-    "GuiCells.Hold.innerHTML = (HamegSetting.trigger.hold) ? \"HOLD\" : \"\";\n" \
+    "updateHtml(GuiCells.Hold, (HamegSetting.trigger.hold) ? \"HOLD\" : \"\");\n" \
     "var opMode = (HamegSetting.general.chop) ? \"CHOP\" : \"\";\n" \
     "if (HamegSetting.general.add)\n" \
     "opMode = \"ADD\";\n" \
-    "document.getElementById(\"op_mode\").value = opMode;\n" \
+    "updateValue(document.getElementById(\"op_mode\"), opMode);\n" \
     "updateChInfo(1, HamegSetting.ch1);\n" \
     "updateChInfo(2, HamegSetting.ch2);\n" \
     "var ref = document.getElementById(\"ref\");\n" \
     "if ((HamegSetting.data.reference1 === undefined)&&(HamegSetting.data.reference2 === undefined))\n" \
     "{\n" \
-    "ref.value = \"NO REF\";\n" \
+    "updateValue(ref, \"NO REF\");\n" \
     "}\n" \
     "else\n" \
     "{\n" \
-    "ref.value = (HamegSetting.data.reference2 === undefined) ? \"REF1\" : \"REF2\";\n" \
+    "updateValue(ref, (HamegSetting.data.reference2 === undefined) ? \"REF1\" : \"REF2\");\n" \
     "}\n" \
     "var resetSingle = document.getElementById(\"reset_single\");\n" \
     "if (HamegSetting.trigger.singleShot)\n" \
@@ -818,8 +846,11 @@
     "if (ErrorMessage != null)\n" \
     "{\n" \
     "GuiCells.Hold.style.color = \"red\";\n" \
-    "GuiCells.Hold.innerHTML = \"NO CONNECTION\";\n" \
-    "GuiCells.ErrorMessage.innerHTML = ErrorMessage;\n" \
+    "if (ErrorMessage === \"timeout\")\n" \
+    "updateHtml(GuiCells.Hold, \"NO CONNECTION\");\n" \
+    "else\n" \
+    "updateHtml(GuiCells.Hold, \"COMM ERROR\");\n" \
+    "updateHtml(GuiCells.ErrorMessage, ErrorMessage);\n" \
     "return;\n" \
     "}\n" \
     "updateGuiElements();\n" \
