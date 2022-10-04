@@ -27,3 +27,8 @@
   #define CONFIG_WEB_PORT      80
 
 #endif
+
+// pins for UART connecting the hameg scope (alternate RX/TX pins of UART0)
+#define HAMEG_RTS D6 // output, signal to Hameg
+#define HAMEG_RXD D7 // cannot be changed: fixed alternate UART0 pin
+#define HAMEG_TXD D8 // cannot be changed: fixed alternate UART0 pin

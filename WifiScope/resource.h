@@ -191,7 +191,14 @@
     "{\n" \
     "Chart.defaults.global.defaultFontColor = \"#fff\";\n" \
     "Chart.defaults.scale.gridLines.zeroLineColor = \"#fff\";\n" \
-    "var Chart1a = newScope(ScopeConfig, \"scope\", \"scope1\",  \"http://hm407:8080\");\n" \
+    "var DeviceURL = \"\";\n" \
+    "var QueryString = window.location.search;\n" \
+    "if ((QueryString != \"\")&&(QueryString != undefined))\n" \
+    "{\n" \
+    "var urlParams = new URLSearchParams(QueryString);\n" \
+    "DeviceURL = urlParams.get('device');\n" \
+    "}\n" \
+    "var Scope = newScope(ScopeConfig, \"scope\", \"scope1\",  DeviceURL);\n" \
     "updateData();\n" \
     "};\n" \
     "</script>\n" \
@@ -462,7 +469,7 @@
     "var autoset = '<button type=\"button\" id=\"autoset\" onclick=\"guiCallback(this);\" title=\\\"Automaticaly adapt oscilloscope settings to signals\\\">AUTOSET</button>';\n" \
     "updateHtml(GuiCells.AutoSet, \"<br>\"+autoset);\n" \
     "GuiCells.ErrorMessage = BottomRow2.insertCell(0);\n" \
-    "GuiCells.ErrorMessage.colSpan = 5;\n" \
+    "GuiCells.ErrorMessage.colSpan = 7;\n" \
     "}\n" \
     "function updateData()\n" \
     "{\n" \
@@ -538,7 +545,7 @@
     "this.Active = 0;\n" \
     "ConnectionError = (this.Client.status != 200);\n" \
     "if (this.Client.status==0)\n" \
-    "TextData = \"ERROR: Unable to communicate with host or IP address.\";\n" \
+    "TextData = \"timeout\";\n" \
     "var ErrorMessage = null;\n" \
     "if (ConnectionError)\n" \
     "{\n" \
@@ -905,7 +912,10 @@
     "{\n" \
     "GuiCells.Hold.style.color = \"red\";\n" \
     "if (ErrorMessage === \"timeout\")\n" \
+    "{\n" \
     "updateHtml(GuiCells.Hold, \"NO CONNECTION\");\n" \
+    "ErrorMessage = \"<font color='red'>ERROR: Unable to communicate with host or IP address.</font>\";\n" \
+    "}\n" \
     "else\n" \
     "updateHtml(GuiCells.Hold, \"COMM ERROR\");\n" \
     "updateHtml(GuiCells.ErrorMessage, ErrorMessage);\n" \

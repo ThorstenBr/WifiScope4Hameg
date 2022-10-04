@@ -29,10 +29,6 @@
 #include <SoftwareSerial.h>
 #include <ESP8266WiFi.h>
 
-// pins for UART connecting the hameg scope (alternate RX/TX pins of UART0)
-#define HAMEG_RTS D6
-#define HAMEG_RXD D7 // cannot be changed: fixed alternate UART0 pin
-#define HAMEG_TXD D8 // cannot be changed: fixed alternate UART0 pin
 
 SoftwareSerial DebugSerial(RX, TX, false);
 

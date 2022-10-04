@@ -210,7 +210,19 @@ window.onload = function()
 	Chart.defaults.global.defaultFontColor = "#fff";
 	Chart.defaults.scale.gridLines.zeroLineColor = "#fff";
 
-	var Chart1a = newScope(ScopeConfig, "scope", "scope1",  "http://hm407:8080");
+	// development & debugging: option to specify a remote device URL, so we can open the HTML file locally and
+	// still test and access the real device.
+	// Usage:
+	//    file://home/user/git/WifiScope4Hameg/html/index.html?device=http://hameg:8080
+	var DeviceURL = "";
+	var QueryString = window.location.search;
+	if ((QueryString != "")&&(QueryString != undefined))
+	{
+		var urlParams = new URLSearchParams(QueryString);
+		DeviceURL = urlParams.get('device');
+	}
+
+	var Scope = newScope(ScopeConfig, "scope", "scope1",  DeviceURL);
 	updateData();
 };
 </script>

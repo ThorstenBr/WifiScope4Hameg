@@ -295,7 +295,7 @@ function addGuiElements(ScopeTable)
 	updateHtml(GuiCells.AutoSet, "<br>"+autoset);
 
 	GuiCells.ErrorMessage = BottomRow2.insertCell(0);
-	GuiCells.ErrorMessage.colSpan = 5;
+	GuiCells.ErrorMessage.colSpan = 7;
 }
 
 function updateData()
@@ -384,7 +384,7 @@ DynamicLoader.prototype.callback = function(msg)
 		this.Active = 0;
 		ConnectionError = (this.Client.status != 200);
 		if (this.Client.status==0)
-			TextData = "ERROR: Unable to communicate with host or IP address.";
+			TextData = "timeout";
 		var ErrorMessage = null;
 		if (ConnectionError)
 		{
@@ -790,7 +790,10 @@ function processData(ChartObj, Json, ErrorMessage)
 	{
 		GuiCells.Hold.style.color = "red";
 		if (ErrorMessage === "timeout")
+		{
 			updateHtml(GuiCells.Hold, "NO CONNECTION");
+			ErrorMessage = "<font color='red'>ERROR: Unable to communicate with host or IP address.</font>";
+		}
 		else
 			updateHtml(GuiCells.Hold, "COMM ERROR");
 		updateHtml(GuiCells.ErrorMessage, ErrorMessage);
