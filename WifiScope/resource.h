@@ -442,6 +442,7 @@
     "GuiCells.Hold = TopRow.insertCell(3);\n" \
     "GuiCells.Hold.style.fontWeight = \"bold\";\n" \
     "GuiCells.Hold.style.fontSize = \"24px\";\n" \
+    "GuiCells.Hold.colSpan = 2;\n" \
     "GuiCells.ButtonsLeft = MiddleRow.cells[0];\n" \
     "GuiCells.ButtonsRight = MiddleRow.cells[2];\n" \
     "var wide = \"<button id=\\\"wide\\\" onclick=\\\"toggleWideView();\\\" title=\\\"Toggle wide display\\\">&#10231;</button>\";\n" \
@@ -460,8 +461,8 @@
     "GuiCells.StoreMode = BottomRow.insertCell(4);\n" \
     "GuiCells.TDiv = BottomRow.insertCell(5);\n" \
     "GuiCells.AutoSet = BottomRow.insertCell(6);\n" \
-    "updateHtml(GuiCells.Y1, \"<font id='ch_info1'></font>\"+getVoltageSelector(1));\n" \
-    "updateHtml(GuiCells.Y2, \"<font id='ch_info2'></font>\"+getVoltageSelector(2));\n" \
+    "updateHtml(GuiCells.Y1, \"<font id='ch_info1'><b><font color='#444'>CH1</font></b></font><br>\"+getVoltageSelector(1));\n" \
+    "updateHtml(GuiCells.Y2, \"<font id='ch_info2'><b><font color='#444'>CH2</font></b></font><br>\"+getVoltageSelector(2));\n" \
     "updateHtml(GuiCells.DualMode, \"<font class='label'>Dual</font><br>\"+ getDualModeSelector());\n" \
     "updateHtml(GuiCells.OpMode, \"<font class='label'>OP</font><br>\"+ getScopeModeSelector());\n" \
     "updateHtml(GuiCells.StoreMode, \"<font class='label'>Store Mode</font><br>\"+getStoreModeSelector());\n" \
@@ -470,10 +471,10 @@
     "updateHtml(GuiCells.AutoSet, \"<br>\"+autoset);\n" \
     "GuiCells.ErrorMessage = BottomRow2.insertCell(0);\n" \
     "GuiCells.ErrorMessage.colSpan = 7;\n" \
+    "updateGuiElements();\n" \
     "}\n" \
     "function updateData()\n" \
     "{\n" \
-    "document.getElementById(\"update\").style.background = \"green\";\n" \
     "for (var i=0;i<FileLoaders.length;i++)\n" \
     "{\n" \
     "FileLoaders[i].load();\n" \
@@ -564,6 +565,7 @@
     "this.Client.timeout = 4000;\n" \
     "this.Client.onreadystatechange = function() {this.dynLoader.callback(\"ready\");};\n" \
     "this.Client.ontimeout = function() {this.dynLoader.callback(\"timeout\");};\n" \
+    "document.getElementById(\"update\").style.background = \"green\";\n" \
     "this.Client.send(null);\n" \
     "};\n" \
     "function convertWaveform(StrData)\n" \
@@ -620,7 +622,6 @@
     "return;\n" \
     "if (element.id == \"update\")\n" \
     "{\n" \
-    "console.log(\"update\", element.value);\n" \
     "if (element.value == \"UPDATE\")\n" \
     "{\n" \
     "}\n" \
@@ -838,7 +839,7 @@
     "Info += \" (var: \"+v.toFixed(0)+\"%)\";\n" \
     "}\n" \
     "}\n" \
-    "var Probe = \" <font color='#505050' id='probe\"+ChannelId+\"'>\"+chObj.probe+\"</font><br>\";\n" \
+    "var Probe = \" <font color='#505050' id='probe\"+ChannelId+\"'>\"+chObj.probe+\"</font>\";\n" \
     "if (chObj.enabled)\n" \
     "{\n" \
     "updateHtml(document.getElementById(\"ch_info\"+ChannelId), \"<b>\"+Info+\"</b>\"+Probe);\n" \
@@ -852,13 +853,18 @@
     "}\n" \
     "function updateGuiElements()\n" \
     "{\n" \
+    "var Title = \"\";\n" \
+    "if (HamegSetting.id != undefined)\n" \
+    "{\n" \
+    "Title = HamegSetting.id.device.split(\" \")[0];\n" \
+    "document.title = Title;\n" \
+    "}\n" \
+    "updateHtml(GuiCells.DeviceID, \"<center><font color=#88f><b>\"+Title+\"</b><br><font size='2'>WiFiScope4Hameg</font></font></center>\");\n" \
+    "if (HamegSetting.trigger === undefined)\n" \
+    "return;\n" \
     "BlockGuiCallbacks = true;\n" \
     "updateHtml(document.getElementById(\"trigger_edge\"), (HamegSetting.trigger.negative) ? \"TRIG &darr;\" : \"TRIG &uarr;\");\n" \
     "document.getElementById(\"hold\").style.background = (HamegSetting.trigger.hold) ? \"red\" : \"\";\n" \
-    "document.getElementById(\"update\").style.background = \"\";//(UpdateRunning) ? \"green\" : \"\";\n" \
-    "var Title = HamegSetting.id.device.split(\" \")[0];\n" \
-    "document.title = Title;\n" \
-    "updateHtml(GuiCells.DeviceID, \"<center><font color=#88f><b>\"+Title+\"</b><br><font size='2'>WiFiScope4Hameg</font></font></center>\");\n" \
     "var TriggerMode = document.getElementById(\"trigger_mode\");\n" \
     "updateValue(TriggerMode, (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? \"NORM\" : \"AUTO\");\n" \
     "TriggerMode.disabled = (HamegSetting.trigger.singleShot) ? 1 : 0;\n" \
@@ -902,6 +908,7 @@
     "}\n" \
     "function processData(ChartObj, Json, ErrorMessage)\n" \
     "{\n" \
+    "document.getElementById(\"update\").style.background = \"\";\n" \
     "ChartConfig = ChartObj.ChartConfig;\n" \
     "ChartConfig.data.datasets = [];\n" \
     "if (Json != null)\n" \

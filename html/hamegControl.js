@@ -260,6 +260,7 @@ function addGuiElements(ScopeTable)
 	GuiCells.Hold = TopRow.insertCell(3);
 	GuiCells.Hold.style.fontWeight = "bold";
 	GuiCells.Hold.style.fontSize = "24px";
+	GuiCells.Hold.colSpan = 2;
 
 	GuiCells.ButtonsLeft = MiddleRow.cells[0];
 	GuiCells.ButtonsRight = MiddleRow.cells[2];
@@ -284,8 +285,8 @@ function addGuiElements(ScopeTable)
 	GuiCells.TDiv = BottomRow.insertCell(5);
 	GuiCells.AutoSet = BottomRow.insertCell(6);
 
-	updateHtml(GuiCells.Y1, "<font id='ch_info1'></font>"+getVoltageSelector(1));
-	updateHtml(GuiCells.Y2, "<font id='ch_info2'></font>"+getVoltageSelector(2));
+	updateHtml(GuiCells.Y1, "<font id='ch_info1'><b><font color='#444'>CH1</font></b></font><br>"+getVoltageSelector(1));
+	updateHtml(GuiCells.Y2, "<font id='ch_info2'><b><font color='#444'>CH2</font></b></font><br>"+getVoltageSelector(2));
 	updateHtml(GuiCells.DualMode, "<font class='label'>Dual</font><br>"+ getDualModeSelector());
 	updateHtml(GuiCells.OpMode, "<font class='label'>OP</font><br>"+ getScopeModeSelector());
 	updateHtml(GuiCells.StoreMode, "<font class='label'>Store Mode</font><br>"+getStoreModeSelector());
@@ -296,11 +297,13 @@ function addGuiElements(ScopeTable)
 
 	GuiCells.ErrorMessage = BottomRow2.insertCell(0);
 	GuiCells.ErrorMessage.colSpan = 7;
+
+	// initial update
+	updateGuiElements();
 }
 
 function updateData()
 {
-	document.getElementById("update").style.background = "green";
 	for (var i=0;i<FileLoaders.length;i++)
 	{
 		FileLoaders[i].load();
@@ -404,6 +407,7 @@ DynamicLoader.prototype.load = function(cb)
 	this.Client.timeout = 4000;
 	this.Client.onreadystatechange = function() {this.dynLoader.callback("ready");};
 	this.Client.ontimeout = function() {this.dynLoader.callback("timeout");};
+	document.getElementById("update").style.background = "green";
 	this.Client.send(null);
 };
 
@@ -468,7 +472,6 @@ function guiCallback(element)
 
 	if (element.id == "update")
 	{
-		console.log("update", element.value);
 		if (element.value == "UPDATE")
 		{
 		}
@@ -699,7 +702,7 @@ function updateChInfo(ChannelId, chObj)
 		}
 	}
 
-	var Probe = " <font color='#505050' id='probe"+ChannelId+"'>"+chObj.probe+"</font><br>";
+	var Probe = " <font color='#505050' id='probe"+ChannelId+"'>"+chObj.probe+"</font>";
 
 	if (chObj.enabled)
 	{
@@ -715,16 +718,22 @@ function updateChInfo(ChannelId, chObj)
 
 function updateGuiElements()
 {
+	var Title = "";
+	if (HamegSetting.id != undefined)
+	{
+		Title = HamegSetting.id.device.split(" ")[0];
+		document.title = Title;
+	}
+	updateHtml(GuiCells.DeviceID, "<center><font color=#88f><b>"+Title+"</b><br><font size='2'>WiFiScope4Hameg</font></font></center>");
+
+	if (HamegSetting.trigger === undefined)
+		return;
+
 	BlockGuiCallbacks = true;
 
 	updateHtml(document.getElementById("trigger_edge"), (HamegSetting.trigger.negative) ? "TRIG &darr;" : "TRIG &uarr;");
 
 	document.getElementById("hold").style.background = (HamegSetting.trigger.hold) ? "red" : "";
-	document.getElementById("update").style.background = "";//(UpdateRunning) ? "green" : "";
-
-	var Title = HamegSetting.id.device.split(" ")[0];
-	document.title = Title;
-	updateHtml(GuiCells.DeviceID, "<center><font color=#88f><b>"+Title+"</b><br><font size='2'>WiFiScope4Hameg</font></font></center>");
 
 	var TriggerMode = document.getElementById("trigger_mode");
 	updateValue(TriggerMode, (HamegSetting.trigger.norm || HamegSetting.trigger.singleShot) ? "NORM" : "AUTO");
@@ -778,6 +787,8 @@ function updateGuiElements()
 
 function processData(ChartObj, Json, ErrorMessage)
 {
+	document.getElementById("update").style.background = "";
+
 	ChartConfig = ChartObj.ChartConfig;
 	ChartConfig.data.datasets = [];
 
