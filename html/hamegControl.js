@@ -161,7 +161,7 @@ function getScopeModeSelector()
 {
 	return ("<select id=\"op_mode\" title=\"Select main operation mode\" onchange=\"guiCallback(this)\">"+
 		"<option value=\"ANALOG\">ANALOG</option>"+
-		"<option value=\"DIGITAL\">DIGTAL</option>"+
+		"<option value=\"DIGITAL\">DIGITAL</option>"+
 		"<option value=\"XY\">XY</option>"+
 		"<option value=\"CT\">CT</option>"+
 		"</select>");
